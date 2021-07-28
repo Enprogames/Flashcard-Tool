@@ -13,13 +13,14 @@ class Root(tk.Tk):
     Main object which handles all frames (current display of widgets) for window
     """
 
-    def __init__(self, background, width=600, height=400):
+    def __init__(self, width=600, height=400, background='grey25'):
 
         tk.Tk.__init__(self)
         self.width = width
         self.height = height
         self.configure(bg=background)
         self.geometry(f"{width}x{height}")
+        self.resizable(0, 0)
 
 
 class ItemSelectionFrame(tk.Frame):
@@ -54,9 +55,11 @@ class FlashcardFrame(tk.Frame):
 class LoginFrame(tk.Frame):
 
     def __init__(self, parent, login_function, back_function, width=600, height=400):
+
+        tk.Frame.__init__(self, parent, width=width, height=height, bg="grey25")
+
         self.width = width
         self.height = height
-        tk.Frame.__init__(self, parent, width=width, height=height, bg="grey25")
         self.parent = parent
         self.login_function = login_function
         self.goto_register_function = back_function
