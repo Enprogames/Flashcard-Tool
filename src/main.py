@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Handles initialization of all functionality for flashcard program.
 
