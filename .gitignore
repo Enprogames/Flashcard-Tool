@@ -130,3 +130,9 @@ dmypy.json
 
 # Pycharm
 .idea
+
+# VSCode
+.vscode
+
+# Other
+src/api_conf.json
