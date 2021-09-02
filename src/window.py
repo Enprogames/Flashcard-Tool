@@ -13,7 +13,7 @@ class Root(tk.Tk):
     Main object which handles all frames (current display of widgets) for window
     """
 
-    def __init__(self, width=600, height=400, background='grey25'):
+    def __init__(self, width=600, height=400, background='#263238'):
 
         tk.Tk.__init__(self)
         self.width = width
