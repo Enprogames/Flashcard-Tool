@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+from typing import Dict
 import requests
 import json
 import os
@@ -9,22 +12,58 @@ with open("src/api_conf.json", "r") as f:
 
 API_KEY = api_conf_json['api_key']
 
-client = NotionClient(token_v2=API_KEY)
+#client = NotionClient(token_v2=f"{API_KEY}")
+headers = {
+        "Authorization": f"Bearer {API_KEY}", "Notion-Version": "2021-08-16", "Content-Type": "application/json"
+    }
 
-page = client.get_block("https://www.notion.so/Charting-and-Technical-Analysis-89391759c30247ea8f09032107fd7946")
+def get_db(id):
+    """
+    https://www.notion.so/2a59b9e1b3b9459eb5fdf64346408b38?v=de3c6ee6899a4173bee5ad1b4b4fbcaf
+    """
 
-print(page.__dict__)
-exit(0)
+    db_url = f"https://api.notion.com/v1/databases/{id}"
 
-headers = {"Authorization": f"Bearer {API_KEY}", "Notion-Version": "2021-05-13", "Content-Type": "application/json"}
-page_id = "89391759-c302-47ea-8f09-032107fd7946"
+    response = requests.get(db_url, headers=headers)
+    return response.json()
 
-parameters = {"query": "Charting and Technical Analysis"}
-notion_page_search = requests.get(f"https://api.notion.com/v1/search", headers=headers, params=parameters)
-print(notion_page_search.json())
+def query_db(id):
 
-notion_page_response = requests.get(f"https://api.notion.com/v1/pages/{page_id}", headers=headers)
-#notion_page_response.raise_for_status()
-notion_page = notion_page_response.json()
+    db_url = f"https://api.notion.com/v1/databases/{id}/query"
 
-print(notion_page)
+    parameters = {"filter": {}}
+
+    response = requests.post(db_url, headers=headers)
+    return response.json()
+
+def search(query: str = ""):
+
+    search_url = f"https://api.notion.com/v1/search"
+
+    response = requests.post(search_url, headers=headers, json={"query": query})
+    return response.json()
+
+def get_shared_dbs():
+
+    all_dbs = search("")['results']
+
+    db_names = {}
+
+    for page in all_dbs:
+        if 'title' in page:
+            db_names[page['title'][0]['text']['content']] = page['id']
+
+    return db_names
+
+def get_flashcard_db_dict(id):
+
+    content = query_db(id)['results']
+
+    definitions = {}
+
+    for item in content:
+        data_row = item['properties']
+        if len(data_row['Term']['title']) > 0 and len(data_row['Definition']['rich_text']) > 0:
+            definitions[data_row['Term']['title'][0]['text']['content']] = data_row['Definition']['rich_text'][0]['text']['content']
+
+    return definitions
