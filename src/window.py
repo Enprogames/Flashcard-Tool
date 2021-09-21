@@ -24,7 +24,27 @@ class Root(tk.Tk):
 
 
 class ItemSelectionFrame(tk.Frame):
-    pass
+    """
+    List of items to check off for selection
+    """
+    def __init__(self, parent, items=[], start_command=None, width=600, height=400):
+
+        tk.Frame.__init__(self, parent, width=width, height=height, bg='#263238', highlightthickness=2, highlightbackground="black")
+        self.parent = parent
+        self.width = width
+        self.height = height
+
+        self.list_items = items
+
+        self.enable = {}
+        
+        for list_item in self.list_items:
+            self.enable[list_item] = tk.Variable()
+            checkbox = tk.Checkbutton(self, text=list_item, variable=self.enable[list_item], foreground='white', bg='#263238', onvalue=True, offvalue=False, font=('consolas', 15, 'normal'))
+            checkbox.pack()
+
+        self.start_button = tk.Button(self, text='START', foreground='white', background='grey25', command=start_command)
+        self.start_button.pack()
 
 
 class FlashcardTermFrame(tk.Frame):
@@ -32,7 +52,19 @@ class FlashcardTermFrame(tk.Frame):
     Display term to memorize, as well as options to go back or repeat card. This frame will follow or be
     followed by a definition.
     """
-    pass
+    def __init__(self, parent, text, flip_command=None, width=600, height=400):
+        
+        tk.Frame.__init__(self, parent, width=width, height=height, bg='#263238', highlightthickness=2, highlightbackground="black")
+        self.parent = parent
+        self.width = width
+        self.height = height
+
+        self.text = text
+        self.text_label = tk.Label(self, text=self.text, foreground='white', background='#263238', font=('consolas', 20, 'bold'))
+        self.text_label.place(relx=0.5, rely=0.5, anchor="center")
+
+        self.flip_button = tk.Button(self, text="FLIP", command=flip_command, font=('consolas', 15, 'bold'))
+        self.flip_button.place(relx=0.5, rely=0.8, anchor="center")
 
 
 class FlashcardDefinitionFrame(tk.Frame):
@@ -40,7 +72,20 @@ class FlashcardDefinitionFrame(tk.Frame):
     Display definition for term to memorize, as well as options to go back or repeat card. This frame will follow or
     be followed by a term.
     """
-    pass
+    def __init__(self, parent, text, next_command=None, width=600, height=400):
+
+        tk.Frame.__init__(self, parent, width=width, height=height, bg='#263238', highlightthickness=2, highlightbackground="black")
+        self.parent = parent
+        self.width = width
+        self.height = height
+
+        self.text = text
+        self.text_label = tk.Label(self, text=self.text, foreground='white', background='#263238', font=('consolas', 10, 'bold'), wraplength=400, justify=tk.CENTER)
+        self.text_label.place(relx=0.5, rely=0.5, anchor="center")
+
+        self.next_button = tk.Button(self, text="NEXT", command=next_command, font=('consolas', 15, 'bold'))
+        self.next_button.place(relx=0.5, rely=0.8, anchor="center")
+
 
 
 class FlashcardFrame(tk.Frame):
@@ -49,7 +94,25 @@ class FlashcardFrame(tk.Frame):
     frame should be shown. When clicking on that frame, the next flashcard should be displayed. There should also
     be buttons for repeating the flashcard now or later in the list.
     """
-    pass
+    def __init__(self, parent, term, definition = "", next_command=None, quit_command=None, width=600, height=400):
+
+        tk.Frame.__init__(self, parent, width=width, height=height, bg='#263238')
+        self.parent = parent
+        self.width = width
+        self.height = height
+
+        self.term_frame = FlashcardTermFrame(self, text=term, flip_command=self.flip_card, width=self.width, height=self.height)
+        self.definition_frame = FlashcardDefinitionFrame(self, text=definition, next_command=next_command, width=self.width, height=self.height)
+
+        quit_button = tk.Button(self, text="QUIT", foreground='white', background='grey25', command=quit_command, font=('consolas', 20, 'bold'))
+        quit_button.place(relx=0.9, rely=0.9, anchor="se")
+
+        self.term_frame.pack(fill="both", expand=True)
+
+
+    def flip_card(self):
+        self.term_frame.pack_forget()
+        self.definition_frame.pack(fill="both", expand=True)
 
 
 class LoginFrame(tk.Frame):
