@@ -38,7 +38,7 @@ def view_sets():
 
         current_frame_index += 1
         
-        if current_frame_index == len(cards_to_present)-1:
+        if current_frame_index >= len(cards_to_present)-1:
             new_flashcard = FlashcardFrame(root, term=cards_to_present[current_frame_index].term, definition=cards_to_present[current_frame_index].definition, next_command=goto_main, quit_command=goto_main)
         else:
             new_flashcard = FlashcardFrame(root, term=cards_to_present[current_frame_index].term, definition=cards_to_present[current_frame_index].definition, next_command=next_card, quit_command=goto_main)
@@ -64,7 +64,10 @@ def view_sets():
     
     # if any sets are selected, present the first card
     if cards_to_present:
-        first_card_frame = FlashcardFrame(root, term=cards_to_present[0].term, definition=cards_to_present[0].definition, next_command=next_card, quit_command=goto_main)
+        if len(cards_to_present) > 1:
+            first_card_frame = FlashcardFrame(root, term=cards_to_present[0].term, definition=cards_to_present[0].definition, next_command=next_card, quit_command=goto_main)
+        else:
+            first_card_frame = FlashcardFrame(root, term=cards_to_present[0].term, definition=cards_to_present[0].definition, next_command=goto_main, quit_command=goto_main)
         show_frame(first_card_frame)
         current_frame = first_card_frame
     
