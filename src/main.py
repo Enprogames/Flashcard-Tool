@@ -52,16 +52,10 @@ def view_sets():
     # determine which sets have been selected using check marks and append them to the selected_sets list accordingly
     selected_sets_values = card_set_selection_frame.enable
     for set in flashcard_sets:
-        print(f'{set.name}: {selected_sets_values[set.name].get()}')
         if selected_sets_values[set.name].get():
             for card in set.cards:
                 cards_to_present.append(card)
 
-    # # create flashcard frames for each flashcard object
-    # flashcard_frames = []
-    # for card in cards_to_present:
-    #         flashcard_frames.append(FlashcardFrame(root, card.term, card.definition, next_command=next_card, quit_command=goto_main))
-    
     # if any sets are selected, present the first card
     if cards_to_present:
         if len(cards_to_present) > 1:
@@ -83,7 +77,7 @@ for key, value in shared_db_ids.items():
     flashcard_sets.append(FlashcardSet(key, notion_parse.get_flashcard_db_dict(value)))
 
 card_set_selection_frame = ItemSelectionFrame(root, list(shared_db_ids.keys()), start_command=view_sets)
-card_set_selection_frame.pack()
+card_set_selection_frame.pack(fill="both", expand=True)
 current_frame = card_set_selection_frame
 
 root.mainloop()
