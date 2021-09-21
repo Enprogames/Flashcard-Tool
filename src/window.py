@@ -39,12 +39,14 @@ class ItemSelectionFrame(tk.Frame):
         self.enable = {}
         
         for list_item in self.list_items:
-            self.enable[list_item] = tk.Variable()
-            checkbox = tk.Checkbutton(self, text=list_item, variable=self.enable[list_item], foreground='white', bg='#263238', onvalue=True, offvalue=False, font=('consolas', 15, 'normal'))
+            self.enable[list_item] = tk.BooleanVar(value=False)
+            checkbox = tk.Checkbutton(
+                self, text=list_item, variable=self.enable[list_item], foreground='white', bg='#263238',
+                onvalue=True, offvalue=False, font=('consolas', 15, 'normal'), selectcolor='black')
             checkbox.pack()
 
-        self.start_button = tk.Button(self, text='START', foreground='white', background='grey25', command=start_command)
-        self.start_button.pack()
+        self.start_button = tk.Button(self, text='START', foreground='white', background='grey25', command=start_command, font=('consolas', 15, 'bold'))
+        self.start_button.place(relx=0.5, rely=0.8, anchor="center")
 
 
 class FlashcardTermFrame(tk.Frame):
