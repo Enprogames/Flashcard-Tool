@@ -6,8 +6,19 @@ import json
 import os
 from notion.client import NotionClient
 
+api_dir = ""  # directory for the file to get the API key from
+
+if os.path.exists("src/api_conf.json"):
+    api_dir = "src/api_conf.json"
+elif os.path.exists("api_conf.json"):
+    api_dir = "api_conf.json"
+elif os.path.exists("../api_conf.json"):
+    api_dir = "../api_conf.json"
+else:
+    raise os.path.FileNotFoundError("The API key file was not found")
+
 # open api_conf.json to get the api key
-with open("src/api_conf.json", "r") as f:
+with open(api_dir, "r") as f:
     api_conf_json = json.load(f)
 
 API_KEY = api_conf_json['api_key']
