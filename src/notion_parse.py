@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
-from typing import Dict
 import requests
 import json
 import os
-from notion.client import NotionClient
 
 api_dir = ""  # directory for the file to get the API key from
 
