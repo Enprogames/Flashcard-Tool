@@ -43,7 +43,7 @@ class FlashcardSet:
         self.description = description
 
         if data_tuple_list:
-            self.cards = [Flashcard(data_tuple[0], data_tuple[1], exclude=data_tuple[2]) for data_tuple in data_tuple_list]
+            self.cards = [Flashcard(str(data_tuple[0]), str(data_tuple[1]), exclude=True if data_tuple[2] == 'True' else False) for data_tuple in data_tuple_list]
         else:
             self.cards = [Flashcard(term, definition) for term, definition in definition_dict.items()]
 
