@@ -6,7 +6,8 @@ Date: July 27, 2021
 """
 
 import os
-import pickle
+import csv
+from typing import List, Tuple
 
 class Flashcard:
     """
@@ -16,17 +17,11 @@ class Flashcard:
     In the future,
     """
 
-    def __init__(self, term: str, definition: str = ""):
+    def __init__(self, term: str, definition: str = "", exclude: bool = False):
 
         self.term: str = term
         self.definition = definition
-
-    def pickle(self):
-        if not os.path.exists('/flashcards'):
-            os.mkdir('/flashcards')
-
-        with open(os.path.join('flashcards', self.term), 'wb') as pickle_file:
-            pickle.dump(self, pickle_file)
+        self.exclude = exclude
     
     def __len__(self):
         return len(self.term)
@@ -37,15 +32,45 @@ class FlashcardSet:
     
     """
 
-    def __init__(self, name: str, flashcard_data: dict = {}, description: str = ""):
+    def __init__(self, name: str, definition_dict: dict = {}, description: str = "", data_tuple_list: List[Tuple[str, str, bool]]=None):
+        """
+        Load flashcards in one of two ways:
+        - data_tuple_list: A list of tuples in the form: (term, definition, exclude)
+        - definition_dict: Dictionary of terms and their definitions. Does not allow for some cards to be excluded.
+        """
 
         self.name = name
         self.description = description
 
-        self.cards = [Flashcard(term, definition) for term, definition in flashcard_data.items()]
+        if data_tuple_list:
+            self.cards = [Flashcard(data_tuple[0], data_tuple[1], exclude=data_tuple[2]) for data_tuple in data_tuple_list]
+        else:
+            self.cards = [Flashcard(term, definition) for term, definition in definition_dict.items()]
 
     def add_card(self, term: str, definition: str = ""):
         self.cards.append(Flashcard(term, definition))
+    
+    def save_to_csv(self, path="flashcard_data", name=""):
+
+        if name == "":
+            name = self.name
+        
+        if not os.path.exists(path):
+            os.mkdir(path)
+        
+        with open(os.path.join(path, name), 'w', newline='') as f:
+
+            writer = csv.writer(f)
+
+            writer.writerow(['Term', 'Definition', 'Exclude'])
+
+            flashcard_data_rows = []
+
+            for card in self.cards:
+                row = [card.term, card.definition, card.exclude]
+                flashcard_data_rows.append(row)
+                
+            writer.writerows(flashcard_data_rows)
     
     def __str__(self):
         card_output = ""
