@@ -136,3 +136,4 @@ dmypy.json
 
 # Other
 src/api_conf.json
+src/csv_flashcard_files
