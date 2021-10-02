@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from typing import Dict, List, Tuple
 import requests
 import json
 import os
@@ -52,27 +53,82 @@ def search(query: str = ""):
     response = requests.post(search_url, headers=headers, json={"query": query})
     return response.json()
 
+def list_dbs():
+
+    search_url = f"https://api.notion.com/v1/search"
+
+    filter = {
+        "value": "database"
+    }
+
+    filter = json.dumps({"filter": {"object": "database"}})
+    response = requests.post(search_url, headers=headers, json={"filter": {"object": "database"}})
+    return response.json()
+
 def get_shared_dbs():
 
-    all_dbs = search("")['results']
+    all_dbs = search()['results']
 
     db_names = {}
 
     for page in all_dbs:
         if 'title' in page:
+            
             db_names[page['title'][0]['text']['content']] = page['id']
 
     return db_names
 
-def get_flashcard_db_dict(id):
+def get_flashcard_definition_dict(id) -> Dict[str, str]:
+    """
+    Return a dictionary in the format {term: definition} based on a given database
+    """
+
+    result: Dict[str, str] = {}
+
+    content = query_db(id)['results']
+    
+    for item in content:
+        data_row = item['properties']
+        if 'Term' in data_row:
+            if len(data_row['Term']['title']) > 0 and len(data_row['Definition']['rich_text']) > 0:
+                if 'Exclude' in data_row: # see if some cards are set to be excluded from the study sessions
+                    if data_row['Exclude']['checkbox']: # if the exclude checkbox is selected, continue without 
+                        continue
+                term = data_row['Term']['title'][0]['text']['content']
+                definition = data_row['Definition']['rich_text'][0]['text']['content']
+
+                result[term] = definition
+
+        else:
+            print(f"error with row: {data_row}")
+    
+    return result
+
+
+def get_flashcard_data_tuples(id) -> List[Tuple[str, str, bool]]:
+    """
+    Return a list of tuples of the form (term: str, definition: str, exclude: bool) based on a given notion database
+    """
+
+    result: List[Tuple[str, str, bool]] = []
 
     content = query_db(id)['results']
 
-    definitions = {}
-
     for item in content:
         data_row = item['properties']
-        if len(data_row['Term']['title']) > 0 and len(data_row['Definition']['rich_text']) > 0:
-            definitions[data_row['Term']['title'][0]['text']['content']] = data_row['Definition']['rich_text'][0]['text']['content']
 
-    return definitions
+        if 'Term' in data_row:
+            if len(data_row['Term']['title']) > 0 and len(data_row['Definition']['rich_text']) > 0:
+                term = data_row['Term']['title'][0]['text']['content']
+                definition = data_row['Definition']['rich_text'][0]['text']['content']
+                exclude = data_row['Exclude']['checkbox'] if 'Exclude' in data_row else False
+
+                result.append((term, definition, exclude))
+
+        else:
+            print(f"row incorrectly formatted: {data_row}")
+        
+    return result
+
+
+
