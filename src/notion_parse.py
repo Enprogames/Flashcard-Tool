@@ -121,6 +121,7 @@ def get_flashcard_data_tuples(id) -> List[Tuple[str, str, bool]]:
             if len(data_row['Term']['title']) > 0 and len(data_row['Definition']['rich_text']) > 0:
                 term = data_row['Term']['title'][0]['text']['content']
                 definition = data_row['Definition']['rich_text'][0]['text']['content']
+
                 exclude = data_row['Exclude']['checkbox'] if 'Exclude' in data_row else False
 
                 result.append((term, definition, exclude))

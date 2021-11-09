@@ -43,7 +43,7 @@ class FlashcardSet:
         self.description = description
 
         if data_tuple_list:
-            self.cards = [Flashcard(str(data_tuple[0]), str(data_tuple[1]), exclude=True if data_tuple[2] == 'True' else False) for data_tuple in data_tuple_list]
+            self.cards = [Flashcard(str(data_tuple[0]), str(data_tuple[1]), exclude=data_tuple[2]) for data_tuple in data_tuple_list]
         else:
             self.cards = [Flashcard(term, definition) for term, definition in definition_dict.items()]
 
@@ -58,7 +58,7 @@ class FlashcardSet:
         if not os.path.exists(path):
             os.mkdir(path)
         
-        with open(os.path.join(path, name), 'w', newline='') as f:
+        with open(os.path.join(path, f'{name}.csv'), 'w', newline='') as f:
 
             writer = csv.writer(f)
 
