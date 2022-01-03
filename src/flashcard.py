@@ -9,6 +9,7 @@ import os
 import csv
 from typing import List, Tuple
 
+
 class Flashcard:
     """
     Store and manipulate data for flashcard. Flashcards are used for memorization of large amounts of information.
@@ -22,20 +23,20 @@ class Flashcard:
         self.term: str = term
         self.definition = definition
         self.exclude = exclude
-    
+
     def __len__(self):
         return len(self.term)
 
 
 class FlashcardSet:
     """
-    
+    Used to store multiple flashcards under a specific name
     """
 
-    def __init__(self, name: str, definition_dict: dict = {}, description: str = "", data_tuple_list: List[Tuple[str, str, bool]]=None):
+    def __init__(self, name: str, definition_dict: dict = {}, description: str = "", data_tuple_list: List[Tuple[str, str, bool]] = None):
         """
         Load flashcards in one of two ways:
-        - data_tuple_list: A list of tuples in the form: (term, definition, exclude)
+        - data_tuple_list: A list of tuples in the form: (term, definition, exclude (optional), image (optional))
         - definition_dict: Dictionary of terms and their definitions. Does not allow for some cards to be excluded.
         """
 
@@ -43,21 +44,23 @@ class FlashcardSet:
         self.description = description
 
         if data_tuple_list:
-            self.cards = [Flashcard(str(data_tuple[0]), str(data_tuple[1]), exclude=data_tuple[2]) for data_tuple in data_tuple_list]
+            self.cards = [Flashcard(str(data_tuple[0]), str(
+                data_tuple[1]), exclude=data_tuple[2]) for data_tuple in data_tuple_list]
         else:
-            self.cards = [Flashcard(term, definition) for term, definition in definition_dict.items()]
+            self.cards = [Flashcard(term, definition)
+                          for term, definition in definition_dict.items()]
 
     def add_card(self, term: str, definition: str = ""):
         self.cards.append(Flashcard(term, definition))
-    
+
     def save_to_csv(self, path="flashcard_data", name=""):
 
         if name == "":
             name = self.name
-        
+
         if not os.path.exists(path):
             os.mkdir(path)
-        
+
         with open(os.path.join(path, f'{name}.csv'), 'w', newline='') as f:
 
             writer = csv.writer(f)
@@ -69,9 +72,9 @@ class FlashcardSet:
             for card in self.cards:
                 row = [card.term, card.definition, card.exclude]
                 flashcard_data_rows.append(row)
-                
+
             writer.writerows(flashcard_data_rows)
-    
+
     def __str__(self):
         card_output = ""
         longest_item_len = len(max(self.cards, key=len))
@@ -81,6 +84,5 @@ class FlashcardSet:
                 card_output += f"\t{card.term:{longest_item_len}}: {card.definition}\n"
             else:
                 card_output += f"\t{card.term:{longest_item_len}}: {card.definition}"
-
 
         return f"{self.name} Flashcard Set. Cards:\n{card_output}"
