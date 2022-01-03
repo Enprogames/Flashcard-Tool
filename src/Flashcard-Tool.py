@@ -16,6 +16,7 @@ import os
 import notion_parse
 from flashcard import FlashcardSet
 from window import Root, ItemSelectionFrame, FlashcardFrame
+import tkinter as tk
 
 current_frame = None
 current_frame_index = 0
@@ -113,12 +114,19 @@ def view_sets():
     if cards_to_present:
         next_item()
 
-
+### initialize the root window
 root = Root(width=1000, height=600)
 root.lift()
 
+loading_frame = tk.Frame(root, bg='#263238')
+loading_label = tk.Label(loading_frame, text='Loading New Flashcard Data...', font=('consolas', 20, 'bold'), fg='white', bg='#263238')
+loading_label.place(relx=.5, rely=.5, anchor="c")
+loading_frame.pack(fill="both", expand=True)
+root.update()
+
 flashcard_set_names = []
 
+### retrieve new flashcard data from notion and save it in csv files
 try:
     #raise ValueError("notion retrieval skipped")
     start = time.perf_counter()
@@ -142,6 +150,8 @@ except Exception as e:
     print(f"Something went wrong when retrieving or parsing flashcard data from notion: {e}")
 
 
+### Load flashcard data from csv files
+
 flashcard_sets = []
 # read all csv files and use their data for the flashcards
 for csv_file in os.listdir(flashcard_data_path):
@@ -164,7 +174,10 @@ for csv_file in os.listdir(flashcard_data_path):
         set_name = os.path.basename(f.name)[:-4]
         flashcard_sets.append(FlashcardSet(set_name, data_tuple_list=flashcard_tuple_list))
         flashcard_set_names.append(set_name)
-            
+
+loading_frame.pack_forget()  
+
+### Present the flashcard sets as selectable items
 
 card_set_selection_frame = ItemSelectionFrame(root, flashcard_set_names, start_command=view_sets)
 card_set_selection_frame.pack(fill="both", expand=True)
