@@ -7,7 +7,7 @@ Author: Ethan Posner
 Date: July 27, 2021
 """
 
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 import pyttsx3
 import random
 import time
@@ -32,6 +32,35 @@ else:
 current_folder = os.path.basename(os.getcwd())
 
 
+def get_flashcard_data(data_path: str):
+    "read all csv files and use their data for the flashcards"
+
+    flashcard_sets = []
+
+    for csv_file in os.listdir(data_path):
+        flashcard_tuple_list: List[Tuple[str, str, bool]] = []
+
+        # make sure the file is a csv file
+        if csv_file[-4:] == '.csv':
+            with open(os.path.join(data_path, f'{csv_file}'), 'r') as f:
+
+                reader = csv.reader(f)
+                next(reader)
+                for line in reader:
+                    if len(line) >= 2:
+                        term = line[0]
+                        definition = line[1]
+                        exclude = True if len(line) > 2 and line[2] == 'True' else False
+
+                        flashcard_tuple_list.append((term, definition, exclude))
+
+            set_name = os.path.basename(f.name)[:-4]
+            flashcard_sets.append(FlashcardSet(set_name, data_tuple_list=flashcard_tuple_list))
+            flashcard_set_names.append(set_name)
+
+    return flashcard_sets
+
+
 def text_to_speech(text: str):
     """
     Copied from stackoverflow: https://stackoverflow.com/questions/63044176/how-to-get-pyttsx3-to-read-a-line-but-not-wait
@@ -40,9 +69,11 @@ def text_to_speech(text: str):
     voices = engine.getProperty('voices')
     engine.setProperty('voice', voices[0].id)
     engine.setProperty('rate', 220)
+    engine.setProperty('volume', 0.5)
     engine.say(text)
     engine.runAndWait()
     del engine
+
 
 def goto_main():
 
@@ -61,13 +92,22 @@ def show_frame(frame):
 
 def view_sets():
 
-    global current_frame, current_frame_index
+    global current_frame, current_frame_index, term, definition
 
     current_frame_index = 0
 
-    def next_item():
-        global current_frame, current_frame_index
+    def card_flip():
+        global term, definition
 
+        if read_aloud:
+            root.update()
+
+            text_to_speech(definition if not definition_first else term)
+
+    def next_item():
+        global current_frame, current_frame_index, term, definition
+
+        # the next button on the card frame should go to the next card, unless it is the last card
         if current_frame_index >= len(cards_to_present)-1:
             next_command = goto_main
         else:
@@ -76,19 +116,21 @@ def view_sets():
         term = cards_to_present[current_frame_index].term
         definition = cards_to_present[current_frame_index].definition
 
-        new_flashcard = FlashcardFrame(root, term=definition if definition_first else term, definition=term if definition_first else definition,
-                                        next_command=next_command, quit_command=goto_main, definition_first=definition_first)
+        new_flashcard = FlashcardFrame(root, term=term, definition=definition, flip_command=card_flip,
+                                       next_command=next_command, quit_command=goto_main, definition_first=definition_first,
+                                       num_of_cards=len(cards_to_present))
+        new_flashcard.set_current_card_num(current_frame_index+1)
 
         # change the frame to the new flashcard
         show_frame(new_flashcard)
         current_frame = new_flashcard
 
+        current_frame_index += 1
+        root.update()
+
         # debug code to make sure the text-to-speech functionality works
         if read_aloud:
-            time.sleep(0.2)
-            text_to_speech("hello")
-
-        current_frame_index += 1
+            text_to_speech(term)
 
     cards_to_present = []
 
@@ -114,7 +156,8 @@ def view_sets():
     if cards_to_present:
         next_item()
 
-### initialize the root window
+
+# initialize the root window
 root = Root(width=1000, height=600)
 root.lift()
 
@@ -126,9 +169,9 @@ root.update()
 
 flashcard_set_names = []
 
-### retrieve new flashcard data from notion and save it in csv files
+# retrieve new flashcard data from notion and save it in csv files
 try:
-    #raise ValueError("notion retrieval skipped")
+    raise ValueError("notion retrieval skipped")
     start = time.perf_counter()
 
     # get flashcard data from notion databases
@@ -150,34 +193,13 @@ except Exception as e:
     print(f"Something went wrong when retrieving or parsing flashcard data from notion: {e}")
 
 
-### Load flashcard data from csv files
+# Load flashcard data from csv files
 
-flashcard_sets = []
-# read all csv files and use their data for the flashcards
-for csv_file in os.listdir(flashcard_data_path):
-    flashcard_tuple_list: List[Tuple[str, str, bool]] = []
+flashcard_sets = get_flashcard_data(flashcard_data_path)
 
-    # make sure the file is a csv file
-    if csv_file[-4:] == '.csv':
-        with open(os.path.join(flashcard_data_path, f'{csv_file}'), 'r') as f:
+loading_frame.pack_forget()
 
-            reader = csv.reader(f)
-            next(reader)
-            for line in reader:
-                if len(line) >= 2:
-                    term = line[0]
-                    definition = line[1]
-                    exclude = True if len(line) > 2 and line[2] == 'True' else False
-
-                    flashcard_tuple_list.append((term, definition, exclude))
-
-        set_name = os.path.basename(f.name)[:-4]
-        flashcard_sets.append(FlashcardSet(set_name, data_tuple_list=flashcard_tuple_list))
-        flashcard_set_names.append(set_name)
-
-loading_frame.pack_forget()  
-
-### Present the flashcard sets as selectable items
+# Present the flashcard sets as selectable items
 
 card_set_selection_frame = ItemSelectionFrame(root, flashcard_set_names, start_command=view_sets)
 card_set_selection_frame.pack(fill="both", expand=True)
