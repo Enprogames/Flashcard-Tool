@@ -72,13 +72,13 @@ class ItemSelectionFrame(tk.Frame):
         self.options_frame = tk.Frame(self, width=300, height=100, bg='#263238')
 
         self.read_aloud = tk.BooleanVar()
-        self.read_aloud_checkbutton = tk.Checkbutton(self.options_frame, text="Read Text Aloud", variable=self.read_aloud, foreground='white', bg='#263238',
-                                                     onvalue=True, offvalue=False, font=('consolas', 15, 'normal'), selectcolor='black')
+        self.read_aloud_checkbutton = tk.Checkbutton(self.options_frame, text="Read Text Aloud", variable=self.read_aloud, foreground='white',
+                                                     bg='#263238', onvalue=True, offvalue=False, font=('consolas', 15, 'normal'), selectcolor='black')
         self.read_aloud_checkbutton.grid(row=1, column=1, sticky='w')
 
         self.reverse_order = tk.BooleanVar()
-        self.reverse_checkbutton = tk.Checkbutton(self.options_frame, text="Show Definition First", variable=self.reverse_order, foreground='white', bg='#263238',
-                                                  onvalue=True, offvalue=False, font=('consolas', 15, 'normal'), selectcolor='black')
+        self.reverse_checkbutton = tk.Checkbutton(self.options_frame, text="Show Definition First", variable=self.reverse_order, foreground='white',
+                                                  bg='#263238', onvalue=True, offvalue=False, font=('consolas', 15, 'normal'), selectcolor='black')
         self.reverse_checkbutton.grid(row=2, column=1, sticky='w')
 
         self.randomize = tk.BooleanVar()
@@ -118,51 +118,6 @@ class ItemSelectionFrame(tk.Frame):
         self.options_frame.place(relx=0.97, rely=1, anchor="se")
 
 
-class FlashcardTermFrame(tk.Frame):
-    """
-    Display term to memorize, as well as options to go back or repeat card. This frame will follow or be
-    followed by a definition.
-    """
-
-    def __init__(self, parent, text, flip_command=None, width=600, height=400, definition_first=False):
-
-        tk.Frame.__init__(self, parent, width=width, height=height, bg='#263238')
-        self.parent = parent
-        self.width = width
-        self.height = height
-
-        self.text = text
-        self.text_label = tk.Label(self, text=self.text, foreground='white', background='#263238', font=(
-            'consolas', resize_font(len(text), 500), 'normal' if definition_first else 'bold'), wraplength=400, justify=tk.CENTER)
-        self.text_label.place(relx=0.5, rely=0.5, anchor="center")
-
-        self.flip_button = tk.Button(self, text="FLIP", command=flip_command, font=('consolas', 15, 'bold'))
-        self.flip_button.place(relx=0.45, rely=0.8, anchor="center")
-
-
-class FlashcardDefinitionFrame(tk.Frame):
-    """
-    Display definition for term to memorize, as well as options to go back or repeat card. This frame will follow or
-    be followed by a term.
-    """
-
-    def __init__(self, parent, text, next_command=None, width=600, height=400, definition_first=False):
-
-        tk.Frame.__init__(self, parent, width=width, height=height, bg='#263238')
-        self.parent = parent
-        self.width = width
-        self.height = height
-
-        self.text = text
-        self.text_label = tk.Label(self, text=self.text, foreground='white', background='#263238', font=(
-            'consolas', resize_font(len(text), 500), 'bold' if definition_first else 'normal'), wraplength=600, justify=tk.CENTER)
-        # Only insert the text into the window if text is given. This will allow for additional room for images if no definition is given for a term
-        self.text_label.place(relx=0.5, rely=0.5, anchor="center")
-
-        self.next_button = tk.Button(self, text="NEXT", command=next_command, font=('consolas', 15, 'bold'))
-        self.next_button.place(relx=0.55, rely=0.8, anchor="center")
-
-
 class FlashcardFrame(tk.Frame):
     """
     Made up of two frames: the term and definition frames. When clicking on the first frame which shows up, the other
@@ -170,26 +125,62 @@ class FlashcardFrame(tk.Frame):
     be buttons for repeating the flashcard now or later in the list.
     """
 
-    def __init__(self, parent, term, definition="", definition_first=False, next_command=None, quit_command=None, width=600, height=400):
+    def __init__(self, parent, term, definition="", definition_first=False, next_command=None, flip_command=None, quit_command=None,
+                 num_of_cards=None, width=600, height=400, bg='#263238'):
 
         tk.Frame.__init__(self, parent, width=width, height=height, bg='#263238')
         self.parent = parent
         self.width = width
         self.height = height
+        self.bg = bg
 
-        self.term_frame = FlashcardTermFrame(self, text=term, flip_command=self.flip_card, width=self.width,
-                                             height=self.height, definition_first=definition_first)
-        self.definition_frame = FlashcardDefinitionFrame(self, text=definition, next_command=next_command,
-                                                         width=self.width, height=self.height, definition_first=definition_first)
+        self.flip_command = flip_command
+        self.next_command = next_command
 
-        quit_button = tk.Button(self, text="QUIT", foreground='white', background='grey25', command=quit_command, font=('consolas', 20, 'bold'))
-        quit_button.place(relx=0.9, rely=0.9, anchor="se")
+        self.term = term
+        self.definition = definition
+        self.definition_first = definition_first
+        self.current_text = term if not self.definition_first else definition  # term or definition
 
-        self.term_frame.pack(fill="both", expand=True)
+        self.card_label = tk.Label(self, text=self.current_text, foreground='white', background=self.bg, font=(
+            'consolas', resize_font(len(self.current_text), 500), 'bold' if not self.definition_first else 'normal'),
+            wraplength=600, justify=tk.CENTER)
+        self.card_label.place(relx=0.5, rely=0.5, anchor='center')
+
+        self.flip_button = tk.Button(self, text="FLIP", command=self.flip_card, font=('consolas', 15, 'bold'))
+        self.flip_button.place(relx=0.45, rely=0.8, anchor="center")
+
+        self.next_button = tk.Button(self, text="NEXT", command=next_command, font=('consolas', 15, 'bold'))
+
+        if num_of_cards is not None:
+            self.num_of_cards = num_of_cards
+            self.current_card_num = 1
+            self.num_of_cards = num_of_cards
+            self.current_card_label = tk.Label(self, text=f"{self.current_card_num}/{self.num_of_cards}", font=('consolas', 15, 'bold'), fg='white',
+                                               bg=self.bg)
+            self.current_card_label.pack(side='top', anchor='ne', padx=10, pady=10)
+
+        self.quit_button = tk.Button(self, text="QUIT", foreground='white', background='grey25', command=quit_command, font=('consolas', 20, 'bold'))
+        self.quit_button.place(relx=0.9, rely=0.9, anchor="se")
 
     def flip_card(self):
-        self.term_frame.pack_forget()
-        self.definition_frame.pack(fill="both", expand=True)
+        self.current_text = self.definition if not self.definition_first else self.term
+        self.card_label.config(text=self.current_text, font=(
+            'consolas', resize_font(len(self.current_text), 500), 'bold' if self.definition_first else 'normal'))
+
+        self.flip_button.place_forget()
+        self.next_button.place(relx=0.55, rely=0.8, anchor="center")
+
+        if self.flip_command is not None:
+            self.flip_command()
+
+    def set_current_card_num(self, num: int):
+        """
+        Allows for another module to pass in the current flashcard number
+        """
+        self.current_card_num = num
+        self.current_card_label.config(text=f"{self.current_card_num}/{self.num_of_cards}")
+        self.current_card_label.pack(side='top', anchor='ne', padx=10, pady=10)
 
 
 class LoginFrame(tk.Frame):
