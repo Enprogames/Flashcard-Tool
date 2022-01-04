@@ -8,14 +8,12 @@ Date: July 27, 2021
 """
 
 from typing import Dict, List, Tuple
-import pyttsx3
-import random
 import time
 import csv
 import os
 import notion_parse
 from flashcard import FlashcardSet, Flashcard
-from window import Root, ItemSelectionFrame, FlashcardFrame, FlashcardSeries
+from window import Root, ItemSelectionFrame, FlashcardSeries
 import tkinter as tk
 
 current_frame = None
@@ -119,6 +117,7 @@ def view_sets():
                                            read_aloud=read_aloud, quit_cmd=goto_main)
         show_frame(flashcard_series)
 
+
 # initialize the root window
 root = Root(width=1000, height=600)
 root.lift()
@@ -133,7 +132,7 @@ flashcard_set_names = []
 
 # retrieve new flashcard data from notion and save it in csv files
 try:
-    raise ValueError("notion retrieval skipped")
+    # raise ValueError("notion retrieval skipped")
     start = time.perf_counter()
 
     save_notion_flashcard_data()

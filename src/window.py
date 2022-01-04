@@ -151,7 +151,6 @@ class FlashcardFrame(tk.Frame):
         self.card_label = tk.Label(self, text=self.current_text, fg='white', bg=self.bg, font=(
             'consolas', resize_font(len(self.current_text), 500), 'bold' if not self.definition_first else 'normal'),
             justify='center', wraplength=800)
-        #self.card_label.place(relx=0.5, rely=0.5, anchor='center')
         self.card_label.pack(fill="x", expand=True)
 
         self.flip_button = tk.Button(self, text="FLIP", command=self.flip_card, font=('consolas', 15, 'bold'))
