@@ -5,7 +5,13 @@ Author: Ethan Posner
 Date: July 27, 2021
 """
 
+import math
+import random
 import tkinter as tk
+from typing import List, Tuple
+import pyttsx3
+
+from flashcard import Flashcard
 
 
 def resize_font(number_of_characters, max_width):
@@ -128,7 +134,7 @@ class FlashcardFrame(tk.Frame):
     def __init__(self, parent, term, definition="", definition_first=False, next_command=None, flip_command=None, quit_command=None,
                  num_of_cards=None, width=600, height=400, bg='#263238'):
 
-        tk.Frame.__init__(self, parent, width=width, height=height, bg='#263238')
+        tk.Frame.__init__(self, parent, width=width, height=height, bg=bg)
         self.parent = parent
         self.width = width
         self.height = height
@@ -142,10 +148,11 @@ class FlashcardFrame(tk.Frame):
         self.definition_first = definition_first
         self.current_text = term if not self.definition_first else definition  # term or definition
 
-        self.card_label = tk.Label(self, text=self.current_text, foreground='white', background=self.bg, font=(
+        self.card_label = tk.Label(self, text=self.current_text, fg='white', bg=self.bg, font=(
             'consolas', resize_font(len(self.current_text), 500), 'bold' if not self.definition_first else 'normal'),
-            wraplength=600, justify=tk.CENTER)
-        self.card_label.place(relx=0.5, rely=0.5, anchor='center')
+            justify='center', wraplength=800)
+        #self.card_label.place(relx=0.5, rely=0.5, anchor='center')
+        self.card_label.pack(fill="x", expand=True)
 
         self.flip_button = tk.Button(self, text="FLIP", command=self.flip_card, font=('consolas', 15, 'bold'))
         self.flip_button.place(relx=0.45, rely=0.8, anchor="center")
@@ -183,9 +190,70 @@ class FlashcardFrame(tk.Frame):
         self.current_card_label.pack(side='top', anchor='ne', padx=10, pady=10)
 
 
+class FlashcardSeries(tk.Frame):
+
+    def __init__(self, parent, cards: List[Flashcard], random_order=False, definition_first=False, quit_cmd=None, read_aloud=False, width=600,
+                 height=400, bg='#263238'):
+
+        tk.Frame.__init__(self, parent, width=width, height=height, bg=bg)
+        self.parent = parent
+        self.width = width
+        self.height = height
+        self.bg = bg
+
+        self.cards = cards
+
+        self.quit_cmd = quit_cmd
+        self.read_aloud = read_aloud
+        self.definition_first = definition_first
+
+        if random_order:
+            random.shuffle(self.cards)
+
+        if self.read_aloud:
+            self.engine = pyttsx3.init()
+            voices = self.engine.getProperty('voices')
+            self.engine.setProperty('voice', voices[1].id)
+            self.engine.setProperty('rate', 220)
+            self.engine.setProperty('volume', 0.5)
+
+        self.current_card_num = 0
+        self.current_card = self.cards[0]
+
+        self.current_card_frame = FlashcardFrame(self, term=self.current_card.term, definition=self.current_card.definition, flip_command=self.flip,
+                                                 next_command=self.next, quit_command=self.quit_cmd, definition_first=self.definition_first,
+                                                 num_of_cards=len(self.cards))
+        self.current_card_frame.set_current_card_num(self.current_card_num+1)
+        self.current_card_frame.pack(fill="both", expand=True)
+
+    def flip(self):
+
+        if self.read_aloud:
+            self.parent.update()
+            self.speak_text(self.current_card.definition)
+
+    def next(self):
+        self.current_card_frame.pack_forget()
+
+        if self.current_card_num+1 >= len(self.cards):
+            self.quit_cmd()
+        else:
+            self.current_card_num += 1
+            self.current_card = self.cards[self.current_card_num]
+            self.current_card_frame = FlashcardFrame(self, term=self.current_card.term, definition=self.current_card.definition,
+                                                     flip_command=self.flip, next_command=self.next, quit_command=self.quit_cmd,
+                                                     definition_first=self.definition_first, num_of_cards=len(self.cards))
+        self.current_card_frame.set_current_card_num(self.current_card_num+1)
+        self.current_card_frame.pack(fill="both", expand=True)
+
+    def speak_text(self, text):
+        self.engine.say(text)
+        self.engine.runAndWait()
+
+
 class LoginFrame(tk.Frame):
 
-    def __init__(self, parent, login_function, back_function, width=600, height=400):
+    def __init__(self, parent, login_function, back_function, width=600, height=400, bg='#263238'):
 
         tk.Frame.__init__(self, parent, width=width, height=height, bg="grey25")
 
@@ -219,3 +287,69 @@ class LoginFrame(tk.Frame):
         login_button = tk.Button(self, text="login", font=('consolas', 10, 'bold'), bg="white", fg="black",
                                  command=login_function)
         login_button.place(relx=.55, rely=.85, anchor="center")
+
+
+class PrettyLabel(tk.Canvas):
+    """
+    Incomplete. Doesn't work properly. Text doesn't appear entirely inside of the canvas
+    Label with a background. If the foreground is light, the background will be black. Otherwise, it will be white.
+    """
+    def __init__(self, parent, text, fg='white', font=("Arial", 20, "normal"), outline_width=2, **kwargs):
+        # the foreground label will be the main one for this object
+        super(PrettyLabel, self).__init__(parent, **kwargs)
+        self.parent = parent
+        self.text = text
+
+        self.fg = fg
+        self.outline_width = outline_width
+
+        self.bg_text_color = 'black' if self.is_light(self.parent.winfo_rgb(self.fg)) else 'white'
+
+        self.text_bg_id = self.create_text(2, 50+self.outline_width, text=self.text, fill=self.bg_text_color, font=font)
+        self.text_id = self.create_text(0, 50, text=self.text, fill=self.fg, font=font)
+
+        self.move(self.text_bg_id, self.findXCenter(self.text_bg_id), 0)
+        self.move(self.text_id, self.findXCenter(self.text_id), 0)
+
+        # print(f"canvas pos: ({self.winfo_x()}, {self.winfo_y()}), size: ({self.winfo_width()}, {self.winfo_height()})")
+        # print(f"text size and position: {self.bbox(self.text_id)}")
+
+    def config(self, text=None, fg=None, font=None, **kwargs):
+        """
+        Change certain aspects of the labels and canvas
+        """
+        if text is not None:
+            self.itemconfig(self.text_bg_id, text=text)
+            self.itemconfig(self.text_id, text=text)
+            self.move(self.text_bg_id, self.findXCenter(self.text_bg_id), 0)
+            self.move(self.text_id, self.findXCenter(self.text_id), 0)
+
+        if font is not None:
+            self.itemconfig(self.text_bg_id, font=font)
+            self.itemconfig(self.text_id, font=font)
+
+        prev_fg = self.fg
+
+        if fg is not None and not prev_fg == fg:
+            self.fg = fg
+            self.bg_text_color = 'black' if self.is_light(self.winfo_rgb(self.fg)) else 'white'
+        super(PrettyLabel, self).config(**kwargs)  # apply any other canvas configuration settings
+        self.itemconfig(self.text_bg_id, **kwargs)
+
+    def is_light(self, rgbColor: Tuple[float, float, float]):
+        """
+        Return true if a color is light, else false.
+        Copied from stackoverflow https://stackoverflow.com/questions/22603510/is-this-possible-to-detect-a-colour-is-a-light-or-dark-colour
+        """
+        [r, g, b] = rgbColor
+        hsp = math.sqrt(0.299 * (r * r) + 0.587 * (g * g) + 0.114 * (b * b))
+        if (hsp > 127.5):
+            return True
+        else:
+            return False
+
+    def findXCenter(self, item):
+        coords = self.bbox(item)
+        xOffset = (self.winfo_reqwidth() / 2) - ((coords[2] - coords[0]) / 2)
+        print(f"window size: {self.winfo_reqwidth()}, text location: {coords[2] - coords[0]}")
+        return xOffset
