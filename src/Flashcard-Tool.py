@@ -33,7 +33,7 @@ current_folder = os.path.basename(os.getcwd())
 def save_notion_flashcard_data():
     # get flashcard data from notion databases
     shared_db_ids = notion_parse.get_shared_dbs()
-    flashcard_sets = []
+    flashcard_sets: List[FlashcardSet] = []
 
     # create the flashcard sets from notion data in each shared database
     for key, value in shared_db_ids.items():

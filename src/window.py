@@ -174,8 +174,8 @@ class FlashcardFrame(tk.Frame):
         self.card_label.config(text=self.current_text, font=(
             'consolas', resize_font(len(self.current_text), 500), 'bold' if self.definition_first else 'normal'))
 
-        self.flip_button.place_forget()
-        self.next_button.place(relx=0.55, rely=0.8, anchor="center")
+        self.flip_button.place_forget()  # remove the "flip card" button
+        self.next_button.place(relx=0.55, rely=0.8, anchor="center")  # insert the "next card" button
 
         if self.flip_command is not None:
             self.flip_command()

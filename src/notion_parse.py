@@ -24,8 +24,9 @@ API_KEY = api_conf_json['api_key']
 
 #client = NotionClient(token_v2=f"{API_KEY}")
 headers = {
-        "Authorization": f"Bearer {API_KEY}", "Notion-Version": "2021-08-16", "Content-Type": "application/json"
-    }
+    "Authorization": f"Bearer {API_KEY}", "Notion-Version": "2021-08-16", "Content-Type": "application/json"
+}
+
 
 def get_db(id):
     """
@@ -37,6 +38,7 @@ def get_db(id):
     response = requests.get(db_url, headers=headers)
     return response.json()
 
+
 def query_db(id):
 
     db_url = f"https://api.notion.com/v1/databases/{id}/query"
@@ -46,12 +48,14 @@ def query_db(id):
     response = requests.post(db_url, headers=headers)
     return response.json()
 
+
 def search(query: str = ""):
 
     search_url = f"https://api.notion.com/v1/search"
 
     response = requests.post(search_url, headers=headers, json={"query": query})
     return response.json()
+
 
 def list_dbs():
 
@@ -65,6 +69,7 @@ def list_dbs():
     response = requests.post(search_url, headers=headers, json={"filter": {"object": "database"}})
     return response.json()
 
+
 def get_shared_dbs():
 
     all_dbs = search()['results']
@@ -73,10 +78,10 @@ def get_shared_dbs():
 
     for page in all_dbs:
         if 'title' in page:
-            
             db_names[page['title'][0]['text']['content']] = page['id']
 
     return db_names
+
 
 def get_flashcard_definition_dict(id) -> Dict[str, str]:
     """
@@ -86,13 +91,13 @@ def get_flashcard_definition_dict(id) -> Dict[str, str]:
     result: Dict[str, str] = {}
 
     content = query_db(id)['results']
-    
+
     for item in content:
         data_row = item['properties']
         if 'Term' in data_row:
             if len(data_row['Term']['title']) > 0 and len(data_row['Definition']['rich_text']) > 0:
-                if 'Exclude' in data_row: # see if some cards are set to be excluded from the study sessions
-                    if data_row['Exclude']['checkbox']: # if the exclude checkbox is selected, continue without 
+                if 'Exclude' in data_row:  # see if some cards are set to be excluded from the study sessions
+                    if data_row['Exclude']['checkbox']:  # if the exclude checkbox is selected, continue without
                         continue
                 term = data_row['Term']['title'][0]['text']['content']
                 definition = data_row['Definition']['rich_text'][0]['text']['content']
@@ -101,7 +106,7 @@ def get_flashcard_definition_dict(id) -> Dict[str, str]:
 
         else:
             print(f"error with row: {data_row}")
-    
+
     return result
 
 
@@ -128,8 +133,5 @@ def get_flashcard_data_tuples(id) -> List[Tuple[str, str, bool]]:
 
         else:
             print(f"row incorrectly formatted: {data_row}")
-        
+
     return result
-
-
-
