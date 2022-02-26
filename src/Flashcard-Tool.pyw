@@ -109,13 +109,12 @@ def view_sets():
     read_aloud = card_set_selection_frame.read_aloud.get()  # whether or not to read each card out loud when it is presented
     definition_first = card_set_selection_frame.reverse_order.get()
 
-    print(f"number of cards selected: {len(cards_to_present)}")
-
     # if any sets are selected, present the first card
     if cards_to_present:
         flashcard_series = FlashcardSeries(root, cards_to_present, random_order=random_order, definition_first=definition_first,
                                            read_aloud=read_aloud, quit_cmd=goto_main)
         show_frame(flashcard_series)
+        flashcard_series.next()
 
 
 # initialize the root window

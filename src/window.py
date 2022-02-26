@@ -216,14 +216,9 @@ class FlashcardSeries(tk.Frame):
             self.engine.setProperty('rate', 220)
             self.engine.setProperty('volume', 0.5)
 
-        self.current_card_num = 0
-        self.current_card = self.cards[0]
+        self.current_card_num = -1
 
-        self.current_card_frame = FlashcardFrame(self, term=self.current_card.term, definition=self.current_card.definition, flip_command=self.flip,
-                                                 next_command=self.next, quit_command=self.quit_cmd, definition_first=self.definition_first,
-                                                 num_of_cards=len(self.cards))
-        self.current_card_frame.set_current_card_num(self.current_card_num+1)
-        self.current_card_frame.pack(fill="both", expand=True)
+        self.current_card_frame = None
 
     def flip(self):
 
@@ -232,7 +227,8 @@ class FlashcardSeries(tk.Frame):
             self.speak_text(self.current_card.definition)
 
     def next(self):
-        self.current_card_frame.pack_forget()
+        if self.current_card_frame:
+            self.current_card_frame.pack_forget()
 
         if self.current_card_num+1 >= len(self.cards):
             self.quit_cmd()
@@ -244,6 +240,9 @@ class FlashcardSeries(tk.Frame):
                                                      definition_first=self.definition_first, num_of_cards=len(self.cards))
         self.current_card_frame.set_current_card_num(self.current_card_num+1)
         self.current_card_frame.pack(fill="both", expand=True)
+        if self.read_aloud:
+            self.parent.update()
+            self.speak_text(self.current_card.term)
 
     def speak_text(self, text):
         self.engine.say(text)
