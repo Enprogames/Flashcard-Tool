@@ -15,6 +15,8 @@ import notion_parse
 from flashcard import FlashcardSet, Flashcard
 from window import Root, ItemSelectionFrame, FlashcardSeries
 import tkinter as tk
+import sys
+sys.stdout = open('src/console.log', 'w')
 
 current_frame = None
 current_frame_index = 0
