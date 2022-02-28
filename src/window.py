@@ -24,12 +24,12 @@ class Root(tk.Tk):
     Main object which handles all frames (current display of widgets) for window
     """
 
-    def __init__(self, width=600, height=400, background='#263238'):
+    def __init__(self, width=600, height=400, bg='#263238'):
 
         tk.Tk.__init__(self)
         self.width = width
         self.height = height
-        self.configure(bg=background)
+        self.configure(bg=bg)
         self.geometry(f"{width}x{height}")
         self.resizable(0, 0)
 
@@ -39,9 +39,10 @@ class ItemSelectionFrame(tk.Frame):
     List of items to check off for selection
     """
 
-    def __init__(self, parent, items=[], start_command=None, width=600, height=600):
+    def __init__(self, parent, items=[], start_command=None, width=600, height=600, bg='#263238'):
 
-        tk.Frame.__init__(self, parent, width=width, height=height, bg='#263238')
+        tk.Frame.__init__(self, parent, width=width, height=height, bg=bg)
+        self.bg = bg
         self.parent = parent
         self.width = width
         self.height = height
@@ -50,12 +51,12 @@ class ItemSelectionFrame(tk.Frame):
 
         # display all flashcard sets for selection
         self.scrollable_item_selection = tk.Frame(self, width=400, height=600, bg='white')
-        self.scrollable_canvas = tk.Canvas(self.scrollable_item_selection, bg='#263238', highlightthickness=0, width=400)
+        self.scrollable_canvas = tk.Canvas(self.scrollable_item_selection, bg=self.bg, highlightthickness=0, width=400)
         self.item_selection_scrollbar = tk.Scrollbar(self.scrollable_item_selection, orient='vertical',
-                                                     command=self.scrollable_canvas.yview, bg='#263238')
+                                                     command=self.scrollable_canvas.yview, bg=bg)
 
         # create a frame for the scrollable items to exist in and bind it to a command which changes their position as the scrollbar moves
-        self.scrollable_items_frame = tk.Frame(self.scrollable_canvas, width=0, height=0, bg='#263238')
+        self.scrollable_items_frame = tk.Frame(self.scrollable_canvas, width=0, height=0, bg=bg)
         self.scrollable_items_frame.bind("<Configure>", lambda e: self.scrollable_canvas.configure(scrollregion=self.scrollable_canvas.bbox("all")))
 
         # set up the scrolling canvas in the
@@ -66,7 +67,7 @@ class ItemSelectionFrame(tk.Frame):
         for i, list_item in enumerate(self.list_items):
             self.enable[list_item] = tk.BooleanVar(value=False)
             checkbox = tk.Checkbutton(
-                self.scrollable_items_frame, text=list_item, variable=self.enable[list_item], foreground='white', bg='#263238',
+                self.scrollable_items_frame, text=list_item, variable=self.enable[list_item], foreground='white', bg=self.bg,
                 onvalue=True, offvalue=False, font=('consolas', 15, 'normal'), selectcolor='black')
             checkbox.grid(row=i, column=0, sticky=tk.W)
 
@@ -75,28 +76,28 @@ class ItemSelectionFrame(tk.Frame):
         self.scrollable_item_selection.pack(padx=5, pady=5, side=tk.LEFT, fill="both", expand=True)
 
         # session customization
-        self.options_frame = tk.Frame(self, width=300, height=100, bg='#263238')
+        self.options_frame = tk.Frame(self, width=300, height=100, bg=self.bg)
 
         self.read_aloud = tk.BooleanVar()
         self.read_aloud_checkbutton = tk.Checkbutton(self.options_frame, text="Read Text Aloud", variable=self.read_aloud, foreground='white',
-                                                     bg='#263238', onvalue=True, offvalue=False, font=('consolas', 15, 'normal'), selectcolor='black')
+                                                     bg=self.bg, onvalue=True, offvalue=False, font=('consolas', 15, 'normal'), selectcolor='black')
         self.read_aloud_checkbutton.grid(row=1, column=1, sticky='w')
 
         self.reverse_order = tk.BooleanVar()
         self.reverse_checkbutton = tk.Checkbutton(self.options_frame, text="Show Definition First", variable=self.reverse_order, foreground='white',
-                                                  bg='#263238', onvalue=True, offvalue=False, font=('consolas', 15, 'normal'), selectcolor='black')
+                                                  bg=self.bg, onvalue=True, offvalue=False, font=('consolas', 15, 'normal'), selectcolor='black')
         self.reverse_checkbutton.grid(row=2, column=1, sticky='w')
 
         self.randomize = tk.BooleanVar()
         self.random_checkbutton = tk.Checkbutton(
-            self.options_frame, text="Random Order", variable=self.randomize, foreground='white', bg='#263238',
+            self.options_frame, text="Random Order", variable=self.randomize, foreground='white', bg=self.bg,
             onvalue=True, offvalue=False, font=('consolas', 15, 'normal'), selectcolor='black')
         self.random_checkbutton.grid(row=3, column=1, sticky='w')
         self.random_checkbutton.toggle()
 
         self.autoflip = tk.BooleanVar()
         self.autoflip_checkbutton = tk.Checkbutton(
-            self.options_frame, text="Autoflip After ", variable=self.autoflip, foreground='white', bg='#263238',
+            self.options_frame, text="Autoflip After ", variable=self.autoflip, foreground='white', bg=self.bg,
             onvalue=True, offvalue=False, font=('consolas', 15, 'normal'), selectcolor='black')
         self.autoflip_checkbutton.grid(row=4, column=1, sticky='w')
 
@@ -105,12 +106,12 @@ class ItemSelectionFrame(tk.Frame):
         # new frame for autoflip options
         self.autoflip_entry_frame = tk.Frame(self.options_frame)
 
-        self.autoflip_interval_box = tk.Entry(self.autoflip_entry_frame, width=5, foreground='white', bg='#263238',
+        self.autoflip_interval_box = tk.Entry(self.autoflip_entry_frame, width=5, foreground='white', bg=self.bg,
                                               font=('consolas', 15, 'normal'), textvariable=self.autoflip_interval)
         self.autoflip_interval_box.delete(0, tk.END)
         self.autoflip_interval_box.insert(0, "5")
         self.autoflip_interval_box.pack(side=tk.LEFT)
-        self.seconds_label = tk.Label(self.autoflip_entry_frame, text="seconds", foreground='white', bg='#263238', font=('consolas', 15, 'normal'))
+        self.seconds_label = tk.Label(self.autoflip_entry_frame, text="seconds", foreground='white', bg=self.bg, font=('consolas', 15, 'normal'))
         self.seconds_label.pack(side=tk.LEFT)
 
         self.autoflip_entry_frame.grid(row=5, column=1, sticky='w')
@@ -237,7 +238,7 @@ class FlashcardSeries(tk.Frame):
             self.current_card = self.cards[self.current_card_num]
             self.current_card_frame = FlashcardFrame(self, term=self.current_card.term, definition=self.current_card.definition,
                                                      flip_command=self.flip, next_command=self.next, quit_command=self.quit_cmd,
-                                                     definition_first=self.definition_first, num_of_cards=len(self.cards))
+                                                     definition_first=self.definition_first, num_of_cards=len(self.cards), bg=self.bg)
         self.current_card_frame.set_current_card_num(self.current_card_num+1)
         self.current_card_frame.pack(fill="both", expand=True)
         if self.read_aloud:

@@ -22,6 +22,9 @@ if os.path.basename(os.getcwd()) == 'src':
 else:
     sys.stdout = open('src/console.log', 'w')
 
+BACKGROUND_COLOR = "#222e40"
+#BACKGROUND_COLOR = '#946b46'
+
 current_frame = None
 current_frame_index = 0
 
@@ -117,7 +120,7 @@ def view_sets():
 
     # if any sets are selected, present the first card
     if cards_to_present:
-        flashcard_series = FlashcardSeries(root, cards_to_present, random_order=random_order, definition_first=definition_first,
+        flashcard_series = FlashcardSeries(root, cards_to_present, random_order=random_order, definition_first=definition_first, bg=BACKGROUND_COLOR,
                                            read_aloud=read_aloud, quit_cmd=goto_main)
         show_frame(flashcard_series)
         flashcard_series.next()
@@ -127,8 +130,8 @@ def view_sets():
 root = Root(width=1000, height=600)
 root.lift()
 
-loading_frame = tk.Frame(root, bg='#263238')
-loading_label = tk.Label(loading_frame, text='Loading New Flashcard Data...', font=('consolas', 20, 'bold'), fg='white', bg='#263238')
+loading_frame = tk.Frame(root, bg=BACKGROUND_COLOR)
+loading_label = tk.Label(loading_frame, text='Loading New Flashcard Data...', font=('consolas', 20, 'bold'), fg='white', bg=BACKGROUND_COLOR)
 loading_label.place(relx=.5, rely=.5, anchor="c")
 loading_frame.pack(fill="both", expand=True)
 root.update()
@@ -156,7 +159,7 @@ loading_frame.pack_forget()
 
 # Present the flashcard sets as selectable items
 
-card_set_selection_frame = ItemSelectionFrame(root, flashcard_set_names, start_command=view_sets)
+card_set_selection_frame = ItemSelectionFrame(root, flashcard_set_names, start_command=view_sets, bg=BACKGROUND_COLOR)
 card_set_selection_frame.pack(fill="both", expand=True)
 current_frame = card_set_selection_frame
 
