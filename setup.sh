@@ -6,3 +6,5 @@ cat > src/api_conf.json << EOF
     "api_key": "Enter API Key Here"
 }
 EOF
+
+mkdir src/csv_flashcard_files
