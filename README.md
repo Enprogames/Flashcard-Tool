@@ -31,6 +31,9 @@ In the future, I aim to create a CRUDL menu to give users the option to create t
 
 
 ### Creating CSV flashcard files
+Create files ending in ".csv" e.g. "french revolution.csv". These will be your flashcard sets.
+The files must follow this structure. Items are separated by commas. For more information about CSV files,
+refer to [this](https://www.howtogeek.com/348960/what-is-a-csv-file-and-how-do-i-open-it/) guide.
 Term | Definition | Exclude
 -----|------------|--------
 When did the french revolution start? | May 5, 1789 | False
