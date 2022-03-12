@@ -7,20 +7,22 @@ Author: Ethan Posner
 Date: July 27, 2021
 """
 
-from typing import Dict, List, Tuple
-import time
-import csv
 import os
-import notion_parse
-from flashcard import FlashcardSet, Flashcard
-from window import Root, ItemSelectionFrame, FlashcardSeries
-import tkinter as tk
 import sys
 
 if os.path.basename(os.getcwd()) == 'src':
     sys.stdout = open('console.log', 'w')
 else:
     sys.stdout = open('src/console.log', 'w')
+
+from typing import Dict, List, Tuple
+import time
+import csv
+import notion_parse
+from flashcard import FlashcardSet, Flashcard
+from window import Root, ItemSelectionFrame, FlashcardSeries
+import tkinter as tk
+
 
 BACKGROUND_COLOR = "#222e40"
 #BACKGROUND_COLOR = '#946b46'
