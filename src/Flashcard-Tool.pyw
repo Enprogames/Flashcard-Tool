@@ -24,7 +24,7 @@ from window import Root, ItemSelectionFrame, FlashcardSeries
 import tkinter as tk
 
 
-BACKGROUND_COLOR = "#222e40"
+BACKGROUND_COLOR = "#24292e"
 #BACKGROUND_COLOR = '#946b46'
 
 current_frame = None
