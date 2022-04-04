@@ -8,9 +8,9 @@ folder.
 
 In the future, I aim to create a CRUDL menu to give users the option to create them inside of this program.
 
-![flashcard-tool1.JPG](docs\img\flashcard-tool1.JPG)
+![flashcard-tool1.JPG](docs/img/flashcard-tool1.JPG)
 
-![flashcard-tool1.JPG](docs\img\flashcard-tool2.JPG)
+![flashcard-tool2.JPG](docs/img/flashcard-tool2.JPG)
 
 ## Installation
 1. Clone repository:
