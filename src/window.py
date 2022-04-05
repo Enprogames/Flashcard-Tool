@@ -75,7 +75,7 @@ class ItemSelectionFrame(tk.Frame):
         self.scrollable_canvas.pack(side=tk.LEFT, fill="both", expand=True)
         self.scrollable_item_selection.pack(padx=5, pady=5, side=tk.LEFT, fill="both", expand=True)
 
-        # session customization
+        ### session customization
         self.options_frame = tk.Frame(self, width=300, height=100, bg=self.bg)
 
         self.read_aloud = tk.BooleanVar()
@@ -106,11 +106,14 @@ class ItemSelectionFrame(tk.Frame):
         # new frame for autoflip options
         self.autoflip_entry_frame = tk.Frame(self.options_frame)
 
-        self.autoflip_interval_box = tk.Entry(self.autoflip_entry_frame, width=5, foreground='white', bg=self.bg,
+        # put autoflip interval box inside of highlighted frame so that its border color can be changed
+        self.autoflip_border_color = tk.Frame(self.autoflip_entry_frame, background=self.bg)
+        self.autoflip_interval_box = tk.Entry(self.autoflip_border_color, width=5, foreground='white', bg=self.bg,
                                               font=('consolas', 15, 'normal'), textvariable=self.autoflip_interval)
         self.autoflip_interval_box.delete(0, tk.END)
         self.autoflip_interval_box.insert(0, "5")
-        self.autoflip_interval_box.pack(side=tk.LEFT)
+        self.autoflip_interval_box.pack(padx=1, pady=1)
+        self.autoflip_border_color.pack(side=tk.LEFT)
         self.seconds_label = tk.Label(self.autoflip_entry_frame, text="seconds", foreground='white', bg=self.bg, font=('consolas', 15, 'normal'))
         self.seconds_label.pack(side=tk.LEFT)
 
@@ -124,6 +127,19 @@ class ItemSelectionFrame(tk.Frame):
 
         self.options_frame.place(relx=0.97, rely=1, anchor="se")
 
+    def autoflip_input_error_alert(self):
+        """
+        Alert the user that the value entered into the autoflip interval entry widget was invalid. Only numbers should be entered
+        into the autoflip entry box.
+        Right now, the box will be made red
+        """
+        self.autoflip_border_color.config(background='red')
+
+    def autoflip_input_error_reset(self):
+        """
+        Remove the alert if the user input has been amended
+        """
+        self.autoflip_border_color.config(background=self.bg)
 
 class FlashcardFrame(tk.Frame):
     """
@@ -191,9 +207,13 @@ class FlashcardFrame(tk.Frame):
 
 
 class FlashcardSeries(tk.Frame):
+    """
+    Frame which is used for presenting multiple flashcard frames
+    """
 
-    def __init__(self, parent, cards: List[Flashcard], random_order=False, definition_first=False, quit_cmd=None, read_aloud=False, width=600,
-                 height=400, bg='#263238'):
+
+    def __init__(self, parent, cards: List[Flashcard], random_order=False, definition_first=False, quit_cmd=None, read_aloud=False, autoflip=False, 
+                 autoflip_interval=0, width=600, height=400, bg='#263238'):
 
         tk.Frame.__init__(self, parent, width=width, height=height, bg=bg)
         self.parent = parent
@@ -206,6 +226,9 @@ class FlashcardSeries(tk.Frame):
         self.quit_cmd = quit_cmd
         self.read_aloud = read_aloud
         self.definition_first = definition_first
+        self.autoflip = autoflip
+        self.autoflip_interval = autoflip_interval
+        self.autoflip_job = None
 
         if random_order:
             random.shuffle(self.cards)
@@ -222,6 +245,18 @@ class FlashcardSeries(tk.Frame):
         self.current_card_frame = None
 
     def flip(self):
+        """
+        Flipping the card is mainly handled by the current card frame
+
+        This handles text to speech of the current card, as well as cancelling an autoflip event if the user flipped before it was issued
+        """
+
+        if self.autoflip_job:  # see if the autoflip job exists. If so, cancel it
+            self.winfo_toplevel().after_cancel(self.autoflip_job)
+            self.autoflip_job = None
+
+        if self.autoflip:  # if autoflip is enabled, schedule another autoflip event
+            self.autoflip_job = self.winfo_toplevel().after(int(self.autoflip_interval*1000), self.next)
 
         if self.read_aloud:
             self.parent.update()
@@ -231,19 +266,30 @@ class FlashcardSeries(tk.Frame):
         if self.current_card_frame:
             self.current_card_frame.pack_forget()
 
+        if self.autoflip_job:  # if a previously created autoflip event still exists, cancel and delete it
+            self.winfo_toplevel().after_cancel(self.autoflip_job)
+            self.autoflip_job = None
+
+        # Quit if no more cards are left
         if self.current_card_num+1 >= len(self.cards):
             self.quit_cmd()
-        else:
+        else:  # Otherwise, prepare the next card
             self.current_card_num += 1
             self.current_card = self.cards[self.current_card_num]
             self.current_card_frame = FlashcardFrame(self, term=self.current_card.term, definition=self.current_card.definition,
                                                      flip_command=self.flip, next_command=self.next, quit_command=self.quit_cmd,
                                                      definition_first=self.definition_first, num_of_cards=len(self.cards), bg=self.bg)
-        self.current_card_frame.set_current_card_num(self.current_card_num+1)
-        self.current_card_frame.pack(fill="both", expand=True)
-        if self.read_aloud:
-            self.parent.update()
-            self.speak_text(self.current_card.term)
+
+            # increment current card counter. Used for displaying progress at top
+            self.current_card_frame.set_current_card_num(self.current_card_num+1)
+            self.current_card_frame.pack(fill="both", expand=True)
+            if self.read_aloud:
+                self.parent.update()
+                self.speak_text(self.current_card.term)
+
+            # set an event for flipping the card after the set interval if autoflip is enabled
+            if self.autoflip:
+                self.autoflip_job = self.winfo_toplevel().after(int(self.autoflip_interval*1000), self.current_card_frame.flip_card)
 
     def speak_text(self, text):
         self.engine.say(text)

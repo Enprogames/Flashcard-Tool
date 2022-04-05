@@ -115,15 +115,29 @@ def view_sets():
                 if not card.exclude:
                     cards_to_present.append(card)
 
-    # retreive all custom settings
+    # retreive all custom settings. These are retrieved through tkinter Booleanvars which are associated with whether the checkbuttons are checked
     random_order = card_set_selection_frame.randomize
     read_aloud = card_set_selection_frame.read_aloud.get()  # whether or not to read each card out loud when it is presented
     definition_first = card_set_selection_frame.reverse_order.get()
+    autoflip = card_set_selection_frame.autoflip.get()
+    autoflip_interval = card_set_selection_frame.autoflip_interval_box.get()
+
+    # make sure legible data was entered into the autoflip box. Otherwise, an error should be issued
+    try:
+        float(autoflip_interval)
+        autoflip_interval_isnumber = True
+    except ValueError:
+        card_set_selection_frame.autoflip_input_error_alert()
+        autoflip_interval_isnumber = False
+
+    if autoflip and autoflip_interval_isnumber:  # if the user input is legible, convert it to an integer
+        autoflip_interval = float(autoflip_interval)
+        card_set_selection_frame.autoflip_input_error_reset()
 
     # if any sets are selected, present the first card
-    if cards_to_present:
+    if cards_to_present and autoflip_interval_isnumber:
         flashcard_series = FlashcardSeries(root, cards_to_present, random_order=random_order, definition_first=definition_first, bg=BACKGROUND_COLOR,
-                                           read_aloud=read_aloud, quit_cmd=goto_main)
+                                           autoflip=autoflip, autoflip_interval=autoflip_interval, read_aloud=read_aloud, quit_cmd=goto_main)
         show_frame(flashcard_series)
         flashcard_series.next()
 
