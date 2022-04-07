@@ -120,22 +120,10 @@ def view_sets():
     read_aloud = card_set_selection_frame.read_aloud.get()  # whether or not to read each card out loud when it is presented
     definition_first = card_set_selection_frame.reverse_order.get()
     autoflip = card_set_selection_frame.autoflip.get()
-    autoflip_interval = card_set_selection_frame.autoflip_interval_box.get()
-
-    # make sure legible data was entered into the autoflip box. Otherwise, an error should be issued
-    try:
-        float(autoflip_interval)
-        autoflip_interval_isnumber = True
-    except ValueError:
-        card_set_selection_frame.autoflip_input_error_alert()
-        autoflip_interval_isnumber = False
-
-    if autoflip and autoflip_interval_isnumber:  # if the user input is legible, convert it to an integer
-        autoflip_interval = float(autoflip_interval)
-        card_set_selection_frame.autoflip_input_error_reset()
+    autoflip_interval = float(card_set_selection_frame.autoflip_interval_box.get())
 
     # if any sets are selected, present the first card
-    if cards_to_present and autoflip_interval_isnumber:
+    if cards_to_present:
         flashcard_series = FlashcardSeries(root, cards_to_present, random_order=random_order, definition_first=definition_first, bg=BACKGROUND_COLOR,
                                            autoflip=autoflip, autoflip_interval=autoflip_interval, read_aloud=read_aloud, quit_cmd=goto_main)
         show_frame(flashcard_series)

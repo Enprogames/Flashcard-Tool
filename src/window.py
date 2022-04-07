@@ -48,6 +48,7 @@ class ItemSelectionFrame(tk.Frame):
         self.height = height
 
         self.list_items = items
+        self.start_command = start_command
 
         # display all flashcard sets for selection
         self.scrollable_item_selection = tk.Frame(self, width=400, height=600, bg='white')
@@ -120,12 +121,25 @@ class ItemSelectionFrame(tk.Frame):
         self.autoflip_entry_frame.grid(row=5, column=1, sticky='w')
 
         self.start_button = tk.Button(self.options_frame, text='START', foreground='white',
-                                      background='grey25', command=start_command, font=('consolas', 15, 'bold'))
+                                      background='grey25', command=self.start_button_press, font=('consolas', 15, 'bold'))
         self.start_button.grid(row=6, column=1, sticky='w')
 
         self.options_frame.grid_rowconfigure(2, weight=1)
 
         self.options_frame.place(relx=0.97, rely=1, anchor="se")
+
+    def start_button_press(self):
+        """
+        Ran when self.start_button is pressed. Before continuing execution of the
+        program, this will make sure user input is legible. If it is, self.start_command
+        will be ran.
+        """
+        try:
+            float(self.autoflip_interval_box.get())
+            self.autoflip_input_error_reset()
+            self.start_command()
+        except ValueError:
+            self.autoflip_input_error_alert()
 
     def autoflip_input_error_alert(self):
         """
