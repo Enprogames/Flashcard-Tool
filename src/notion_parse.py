@@ -22,9 +22,8 @@ with open(api_dir, "r") as f:
 
 API_KEY = api_conf_json['api_key']
 
-#client = NotionClient(token_v2=f"{API_KEY}")
 headers = {
-    "Authorization": f"Bearer {API_KEY}", "Notion-Version": "2021-08-16", "Content-Type": "application/json"
+    "Authorization": f"Bearer {API_KEY}", "Notion-Version": "2022-02-22", "Content-Type": "application/json"
 }
 
 
