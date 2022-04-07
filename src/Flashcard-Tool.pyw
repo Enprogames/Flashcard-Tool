@@ -10,10 +10,14 @@ Date: July 27, 2021
 import os
 import sys
 
-if os.path.basename(os.getcwd()) == 'src':
-    sys.stdout = open('console.log', 'w')
-else:
-    sys.stdout = open('src/console.log', 'w')
+skip_notion_retrieval = False
+debug = False
+
+if not debug:
+    if os.path.basename(os.getcwd()) == 'src':
+        sys.stdout = open('console.log', 'w')
+    else:
+        sys.stdout = open('src/console.log', 'w')
 
 from typing import Dict, List, Tuple
 import time
@@ -22,7 +26,7 @@ import notion_parse
 from flashcard import FlashcardSet, Flashcard
 from window import Root, ItemSelectionFrame, FlashcardSeries
 import tkinter as tk
-
+from threading import Thread
 
 BACKGROUND_COLOR = "#24292e"
 #BACKGROUND_COLOR = '#946b46'
@@ -41,20 +45,36 @@ else:
 current_folder = os.path.basename(os.getcwd())
 
 
-def save_notion_flashcard_data():
-    # get flashcard data from notion databases
-    shared_db_ids = notion_parse.get_shared_dbs()
-    flashcard_sets: List[FlashcardSet] = []
+class AsyncDataRetriever(Thread):
+    """
+    Asynchronously downloads flashcard data from notion databases. This allows the program to continue running while data is being retrieved.
+    """
+    def __init__(self):
+        super().__init__()
 
-    # create the flashcard sets from notion data in each shared database
-    for key, value in shared_db_ids.items():
-        notion_db_data_tuple = notion_parse.get_flashcard_data_tuples(value)
+    def run(self):
+        try:
 
-        flashcard_sets.append(FlashcardSet(key, data_tuple_list=notion_db_data_tuple))
+            start = time.perf_counter()
 
-    # save flashcards to csv files
-    for card_set in flashcard_sets:
-        card_set.save_to_csv(flashcard_data_path)
+            # get flashcard data from notion databases
+            shared_db_ids = notion_parse.get_shared_dbs()
+            flashcard_sets: List[FlashcardSet] = []
+
+            # create the flashcard sets from notion data in each shared database
+            for key, value in shared_db_ids.items():
+                notion_db_data_tuple = notion_parse.get_flashcard_data_tuples(value)
+
+                flashcard_sets.append(FlashcardSet(key, data_tuple_list=notion_db_data_tuple))
+
+            # save flashcards to csv files
+            for card_set in flashcard_sets:
+                card_set.save_to_csv(flashcard_data_path)
+
+        except Exception as e:
+            print(f"Something went wrong while retrieving flashcard data from notion: {e}")
+
+        print(f"New flashcard data successfully retrieved from notion in {round(time.perf_counter()-start, 2)} seconds")
 
 
 def get_flashcard_data(data_path: str):
@@ -143,28 +163,39 @@ root.update()
 flashcard_set_names = []
 
 # retrieve new flashcard data from notion and save it in csv files
-try:
-    # raise ValueError("notion retrieval skipped")
-    start = time.perf_counter()
+if not skip_notion_retrieval:
+    try:
 
-    save_notion_flashcard_data()
+        downloader = AsyncDataRetriever()
+        downloader.daemon = True
+        downloader.start()
 
-    print(f"New flashcard data successfully retrieved from notion in {round(time.perf_counter()-start, 2)} seconds")
+    except Exception as e:
+        print(f"Something went wrong when retrieving or parsing flashcard data from notion: {e}")
 
-except Exception as e:
-    print(f"Something went wrong when retrieving or parsing flashcard data from notion: {e}")
+else:
+    print("notion retrieval skipped")
 
-
-# Load flashcard data from csv files
 
 flashcard_sets = get_flashcard_data(flashcard_data_path)
 
 loading_frame.pack_forget()
-
 # Present the flashcard sets as selectable items
-
 card_set_selection_frame = ItemSelectionFrame(root, flashcard_set_names, start_command=view_sets, bg=BACKGROUND_COLOR)
 card_set_selection_frame.pack(fill="both", expand=True)
 current_frame = card_set_selection_frame
+
+
+def wait():
+    global flashcard_sets
+
+    if downloader.is_alive():
+        root.after(500, wait)
+    else:  # Once the downloader is finished, load flashcard data from csv files
+        
+        flashcard_sets = get_flashcard_data(flashcard_data_path)
+
+
+wait()
 
 root.mainloop()
