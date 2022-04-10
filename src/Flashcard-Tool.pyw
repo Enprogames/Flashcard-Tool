@@ -13,18 +13,21 @@ import sys
 skip_notion_retrieval = False
 debug = False
 
+ROOT_DIR = ''
+if os.path.basename(os.getcwd()) == 'src':
+    ROOT_DIR = ''
+else:
+    ROOT_DIR = 'src'
+
 if not debug:
-    if os.path.basename(os.getcwd()) == 'src':
-        sys.stdout = open('console.log', 'w')
-    else:
-        sys.stdout = open('src/console.log', 'w')
+        sys.stdout = open(os.path.join(ROOT_DIR, 'console.log'), 'w')
 
 from typing import Dict, List, Tuple
 import time
 import csv
 import notion_parse
 from flashcard import FlashcardSet, Flashcard
-from window import Root, ItemSelectionFrame, FlashcardSeries
+from window import Root, ItemSelectionFrame, FlashcardFrame
 import tkinter as tk
 from threading import Thread
 
@@ -36,11 +39,7 @@ current_frame_index = 0
 
 flashcard_csv_file_folder = "csv_flashcard_files"
 
-flashcard_data_path = os.path.join("src", flashcard_csv_file_folder)
-if os.path.exists(os.path.join("src", flashcard_csv_file_folder)):
-    flashcard_data_path = os.path.join("src", flashcard_csv_file_folder)
-else:
-    flashcard_data_path = flashcard_csv_file_folder
+flashcard_data_path = os.path.join(ROOT_DIR, flashcard_csv_file_folder)
 
 current_folder = os.path.basename(os.getcwd())
 
@@ -144,8 +143,9 @@ def view_sets():
 
     # if any sets are selected, present the first card
     if cards_to_present:
-        flashcard_series = FlashcardSeries(root, cards_to_present, random_order=random_order, definition_first=definition_first, bg=BACKGROUND_COLOR,
-                                           autoflip=autoflip, autoflip_interval=autoflip_interval, read_aloud=read_aloud, quit_cmd=goto_main)
+        flashcard_series = FlashcardFrame(root, cards_to_present, random_order=random_order, definition_first=definition_first, bg=BACKGROUND_COLOR,
+                                           autoflip=autoflip, autoflip_interval=autoflip_interval, read_aloud=read_aloud, quit_cmd=goto_main,
+                                           root_dir=ROOT_DIR)
         show_frame(flashcard_series)
         flashcard_series.next()
 
@@ -192,7 +192,6 @@ def wait():
     if downloader.is_alive():
         root.after(500, wait)
     else:  # Once the downloader is finished, load flashcard data from csv files
-        
         flashcard_sets = get_flashcard_data(flashcard_data_path)
 
 
