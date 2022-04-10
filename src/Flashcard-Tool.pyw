@@ -20,7 +20,11 @@ else:
     ROOT_DIR = 'src'
 
 if not debug:
-        sys.stdout = open(os.path.join(ROOT_DIR, 'console.log'), 'w')
+    # clear file contents frm previous sessions
+    open(os.path.join(ROOT_DIR, 'console.log'), '+w')
+    sys.stdout = open(os.path.join(ROOT_DIR, 'console.log'), 'a')
+    sys.stderr = open(os.path.join(ROOT_DIR, 'console.log'), 'a')
+
 
 from typing import Dict, List, Tuple
 import time
@@ -31,8 +35,9 @@ from window import Root, ItemSelectionFrame, FlashcardFrame
 import tkinter as tk
 from threading import Thread
 
-BACKGROUND_COLOR = "#24292e"
-#BACKGROUND_COLOR = '#946b46'
+BACKGROUND_COLOR = "#191919"
+# BACKGROUND_COLOR = "#24292e"
+# BACKGROUND_COLOR = '#946b46'
 
 current_frame = None
 current_frame_index = 0
