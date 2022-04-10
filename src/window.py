@@ -6,17 +6,15 @@ Date: July 27, 2021
 """
 
 import math
+import os
 import random
+import time
 import tkinter as tk
 from typing import List, Tuple
 import pyttsx3
+from PIL import Image, ImageTk
 
 from flashcard import Flashcard
-
-
-def resize_font(number_of_characters, max_width):
-    return 20
-    return round(max_width * 1.6 / number_of_characters)
 
 
 class Root(tk.Tk):
@@ -155,79 +153,14 @@ class ItemSelectionFrame(tk.Frame):
         """
         self.autoflip_border_color.config(background=self.bg)
 
+
 class FlashcardFrame(tk.Frame):
-    """
-    Made up of two frames: the term and definition frames. When clicking on the first frame which shows up, the other
-    frame should be shown. When clicking on that frame, the next flashcard should be displayed. There should also
-    be buttons for repeating the flashcard now or later in the list.
-    """
-
-    def __init__(self, parent, term, definition="", definition_first=False, next_command=None, flip_command=None, quit_command=None,
-                 num_of_cards=None, width=600, height=400, bg='#263238'):
-
-        tk.Frame.__init__(self, parent, width=width, height=height, bg=bg)
-        self.parent = parent
-        self.width = width
-        self.height = height
-        self.bg = bg
-
-        self.flip_command = flip_command
-        self.next_command = next_command
-
-        self.term = term
-        self.definition = definition
-        self.definition_first = definition_first
-        self.current_text = term if not self.definition_first else definition  # term or definition
-
-        self.card_label = tk.Label(self, text=self.current_text, fg='white', bg=self.bg, font=(
-            'consolas', resize_font(len(self.current_text), 500), 'bold' if not self.definition_first else 'normal'),
-            justify='center', wraplength=800)
-        self.card_label.pack(fill="x", expand=True)
-
-        self.flip_button = tk.Button(self, text="FLIP", command=self.flip_card, font=('consolas', 15, 'bold'))
-        self.flip_button.place(relx=0.45, rely=0.8, anchor="center")
-
-        self.next_button = tk.Button(self, text="NEXT", command=next_command, font=('consolas', 15, 'bold'))
-
-        if num_of_cards is not None:
-            self.num_of_cards = num_of_cards
-            self.current_card_num = 1
-            self.num_of_cards = num_of_cards
-            self.current_card_label = tk.Label(self, text=f"{self.current_card_num}/{self.num_of_cards}", font=('consolas', 15, 'bold'), fg='white',
-                                               bg=self.bg)
-            self.current_card_label.pack(side='top', anchor='ne', padx=10, pady=10)
-
-        self.quit_button = tk.Button(self, text="QUIT", foreground='white', background='grey25', command=quit_command, font=('consolas', 20, 'bold'))
-        self.quit_button.place(relx=0.9, rely=0.9, anchor="se")
-
-    def flip_card(self):
-        self.current_text = self.definition if not self.definition_first else self.term
-        self.card_label.config(text=self.current_text, font=(
-            'consolas', resize_font(len(self.current_text), 500), 'bold' if self.definition_first else 'normal'))
-
-        self.flip_button.place_forget()  # remove the "flip card" button
-        self.next_button.place(relx=0.55, rely=0.8, anchor="center")  # insert the "next card" button
-
-        if self.flip_command is not None:
-            self.flip_command()
-
-    def set_current_card_num(self, num: int):
-        """
-        Allows for another module to pass in the current flashcard number
-        """
-        self.current_card_num = num
-        self.current_card_label.config(text=f"{self.current_card_num}/{self.num_of_cards}")
-        self.current_card_label.pack(side='top', anchor='ne', padx=10, pady=10)
-
-
-class FlashcardSeries(tk.Frame):
     """
     Frame which is used for presenting multiple flashcard frames
     """
 
-
-    def __init__(self, parent, cards: List[Flashcard], random_order=False, definition_first=False, quit_cmd=None, read_aloud=False, autoflip=False, 
-                 autoflip_interval=0, width=600, height=400, bg='#263238'):
+    def __init__(self, parent, cards: List[Flashcard], random_order=False, definition_first=False, quit_cmd=None, read_aloud=False, autoflip=False,
+                 autoflip_interval=0, width=600, height=400, bg='#263238', root_dir='', img_dir='img'):
 
         tk.Frame.__init__(self, parent, width=width, height=height, bg=bg)
         self.parent = parent
@@ -243,6 +176,44 @@ class FlashcardSeries(tk.Frame):
         self.autoflip = autoflip
         self.autoflip_interval = autoflip_interval
         self.autoflip_job = None
+        self.definition_first = definition_first
+
+        self.current_text = tk.StringVar(value="")  # term or definition
+
+        self.card_label = tk.Label(self, textvariable=self.current_text, fg='white', bg=self.bg, font=(
+            'consolas', 20, 'bold' if not self.definition_first else 'normal'),
+            justify='center', wraplength=800)
+        self.card_label.pack(fill="x", expand=True)
+
+        self.flip_button = tk.Button(self, text="FLIP", command=self.flip, font=('consolas', 15, 'bold'))
+        self.flip_button.place(relx=0.45, rely=0.8, anchor="center")
+        self.is_flipped = False  # allows for user to flip back to the term after seeing the definition
+
+        self.next_button = tk.Button(self, text="NEXT", command=self.next, font=('consolas', 15, 'bold'))
+
+        self.num_of_cards = len(self.cards)
+        self.current_card_num = -1  # since the presentation of cards hasn't started yet, -1 is the current card
+        self.current_card_text = tk.StringVar(value=f"{self.current_card_num}/{self.num_of_cards}")
+        self.current_card_label = tk.Label(self, textvariable=self.current_card_text, font=('consolas', 15, 'bold'), fg='white',
+                                           bg=self.bg)
+        self.current_card_label.pack(side='top', anchor='ne', padx=10, pady=10)
+
+        self.quit_button = tk.Button(self, text="QUIT", foreground='white', background='grey25', command=quit_cmd, font=('consolas', 20, 'bold'))
+        self.quit_button.pack(side='top', anchor='ne', padx=10, pady=10)
+
+        self.pause_autoflip = False  # a pause button will be used for pausing autoflipping if enabled
+        if autoflip:
+            pause_icon = Image.open(os.path.join(root_dir, img_dir, "pause_icon.png"))
+            pause_icon = ImageTk.PhotoImage(pause_icon.resize((100, 100)))
+            label = tk.Label(image=pause_icon)
+            label.image = pause_icon # keep a reference!
+            self.autoflip_pause_button = tk.Button(self, text="Pause", image=pause_icon, command=self.toggle_pause_autoflip,
+                                                   bg=bg, width=40, height=40)
+            self.autoflip_pause_button.pack(side='top', anchor='nw', padx=10, pady=10)
+
+            # used to keep track of how much longer to wait after pausing and unpausing
+            self.autoflip_schedule_start = 0
+            self.autoflip_schedule_elapsed = 0
 
         if random_order:
             random.shuffle(self.cards)
@@ -254,10 +225,6 @@ class FlashcardSeries(tk.Frame):
             self.engine.setProperty('rate', 220)
             self.engine.setProperty('volume', 0.5)
 
-        self.current_card_num = -1
-
-        self.current_card_frame = None
-
     def flip(self):
         """
         Flipping the card is mainly handled by the current card frame
@@ -265,20 +232,31 @@ class FlashcardSeries(tk.Frame):
         This handles text to speech of the current card, as well as cancelling an autoflip event if the user flipped before it was issued
         """
 
-        if self.autoflip_job:  # see if the autoflip job exists. If so, cancel it
-            self.winfo_toplevel().after_cancel(self.autoflip_job)
-            self.autoflip_job = None
+        if not self.is_flipped:
+            self.is_flipped = True
+            self.current_text.set(self.current_card.definition if not self.definition_first else self.current_card.term)
+            self.card_label.config(font=('consolas', 15, 'normal') if not self.definition_first else ('consolas', 15, 'bold'))
 
-        if self.autoflip:  # if autoflip is enabled, schedule another autoflip event
-            self.autoflip_job = self.winfo_toplevel().after(int(self.autoflip_interval*1000), self.next)
+            self.next_button.place(relx=0.55, rely=0.8, anchor="center")  # insert the "next card" button
+
+            if self.autoflip_job:  # see if the autoflip job exists. If so, cancel it
+                self.winfo_toplevel().after_cancel(self.autoflip_job)
+                self.autoflip_job = None
+
+            if self.autoflip and not self.pause_autoflip:  # if autoflip is enabled, schedule another autoflip event
+                self.autoflip_job = self.winfo_toplevel().after(int(self.autoflip_interval*1000), self.next)
+                self.autoflip_schedule_start = time.time() * 1000
+                self.autoflip_schedule_elapsed = 0
+        else:  # if the card has already been flipped, flip back to the term
+            self.is_flipped = False
+            self.current_text.set(self.current_card.term if not self.definition_first else self.current_card.definition)
+            self.card_label.config(font=('consolas', 15, 'bold') if not self.definition_first else ('consolas', 15, 'normal'))
 
         if self.read_aloud:
             self.parent.update()
             self.speak_text(self.current_card.definition)
 
     def next(self):
-        if self.current_card_frame:
-            self.current_card_frame.pack_forget()
 
         if self.autoflip_job:  # if a previously created autoflip event still exists, cancel and delete it
             self.winfo_toplevel().after_cancel(self.autoflip_job)
@@ -288,22 +266,40 @@ class FlashcardSeries(tk.Frame):
         if self.current_card_num+1 >= len(self.cards):
             self.quit_cmd()
         else:  # Otherwise, prepare the next card
+            self.is_flipped = False
+            self.next_button.place_forget()
             self.current_card_num += 1
-            self.current_card = self.cards[self.current_card_num]
-            self.current_card_frame = FlashcardFrame(self, term=self.current_card.term, definition=self.current_card.definition,
-                                                     flip_command=self.flip, next_command=self.next, quit_command=self.quit_cmd,
-                                                     definition_first=self.definition_first, num_of_cards=len(self.cards), bg=self.bg)
+            self.current_card_text.set(f"{self.current_card_num+1}/{self.num_of_cards}")  # e.g. show that value with show as 1 instead of 0
+            self.card_label.config(font=('consolas', 15, 'bold') if not self.definition_first else ('consolas', 15, 'normal'))
 
-            # increment current card counter. Used for displaying progress at top
-            self.current_card_frame.set_current_card_num(self.current_card_num+1)
-            self.current_card_frame.pack(fill="both", expand=True)
+            self.current_card = self.cards[self.current_card_num]
+            self.current_text.set(self.current_card.term if not self.definition_first else self.current_card.definition)
+
             if self.read_aloud:
                 self.parent.update()
                 self.speak_text(self.current_card.term)
 
             # set an event for flipping the card after the set interval if autoflip is enabled
-            if self.autoflip:
-                self.autoflip_job = self.winfo_toplevel().after(int(self.autoflip_interval*1000), self.current_card_frame.flip_card)
+            if self.autoflip and not self.pause_autoflip:
+                self.autoflip_job = self.winfo_toplevel().after(int(self.autoflip_interval*1000), self.flip if not self.is_flipped else self.next)
+                self.autoflip_schedule_start = time.time() * 1000
+                self.autoflip_schedule_elapsed = 0
+
+    def toggle_pause_autoflip(self):
+        if not self.pause_autoflip:
+            self.autoflip_pause_button.config(relief="raised")
+            self.pause_autoflip = True
+            if self.autoflip_job:  # see if the autoflip job exists. If so, cancel it
+                self.winfo_toplevel().after_cancel(self.autoflip_job)
+                self.autoflip_job = None
+                self.autoflip_schedule_elapsed = time.time() * 1000 - self.autoflip_schedule_start
+        else:
+            self.autoflip_pause_button.config(relief="sunken")
+            self.pause_autoflip = False
+            # start a new autoflip job starting where the last one left off
+            self.autoflip_job = self.winfo_toplevel().after(int(self.autoflip_interval*1000-self.autoflip_schedule_elapsed), self.flip)
+            self.autoflip_schedule_start = time.time() * 1000
+            self.autoflip_schedule_elapsed = 0
 
     def speak_text(self, text):
         self.engine.say(text)
