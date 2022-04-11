@@ -205,12 +205,12 @@ class FlashcardFrame(tk.Frame):
 
         self.pause_autoflip = False  # a pause button will be used for pausing autoflipping if enabled
         if autoflip:
-            pause_icon = Image.open(os.path.join(root_dir, img_dir, "pause_icon.png"))
-            pause_icon = ImageTk.PhotoImage(pause_icon.resize((100, 100)))
+            pause_icon = Image.open(os.path.join(root_dir, img_dir, "pause_icon2.png"))
+            pause_icon = ImageTk.PhotoImage(pause_icon.resize((50, 50)))
             label = tk.Label(image=pause_icon)
-            label.image = pause_icon # keep a reference!
-            self.autoflip_pause_button = tk.Button(self, text="Pause", image=pause_icon, command=self.toggle_pause_autoflip,
-                                                   relief='raised', bd=3, bg=bg, width=40, height=40)
+            label.image = pause_icon # keep a reference of the image in the label
+            self.autoflip_pause_button = tk.Button(self, image=pause_icon, command=self.toggle_pause_autoflip,
+                                                   relief='raised', bd=3, background='grey25', compound='center', width=60, height=60)
             self.autoflip_pause_button.pack(side='top', anchor='nw', padx=10, pady=10)
 
             # used to keep track of how much longer to wait after pausing and unpausing
