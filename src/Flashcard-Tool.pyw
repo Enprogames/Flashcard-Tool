@@ -149,8 +149,8 @@ def view_sets():
     # if any sets are selected, present the first card
     if cards_to_present:
         flashcard_series = FlashcardFrame(root, cards_to_present, random_order=random_order, definition_first=definition_first, bg=BACKGROUND_COLOR,
-                                           autoflip=autoflip, autoflip_interval=autoflip_interval, read_aloud=read_aloud, quit_cmd=goto_main,
-                                           root_dir=ROOT_DIR)
+                                          autoflip=autoflip, autoflip_interval=autoflip_interval, read_aloud=read_aloud, quit_cmd=goto_main,
+                                          root_dir=ROOT_DIR)
         show_frame(flashcard_series)
         flashcard_series.next()
 

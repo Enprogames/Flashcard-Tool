@@ -187,8 +187,11 @@ class FlashcardFrame(tk.Frame):
             justify='center', wraplength=800)
         self.card_label.pack(fill="x", expand=True)
 
+        self.back_button = tk.Button(self, text="BACK", command=self.back, font=('consolas', 15, 'bold'))
+        self.back_button.place(relx=0.4, rely=0.8, anchor="center")
+
         self.flip_button = tk.Button(self, text="FLIP", command=self.flip, font=('consolas', 15, 'bold'))
-        self.flip_button.place(relx=0.45, rely=0.8, anchor="center")
+        self.flip_button.place(relx=0.5, rely=0.8, anchor="center")
         self.is_flipped = False  # allows for user to flip back to the term after seeing the definition
 
         self.next_button = tk.Button(self, text="NEXT", command=self.next, font=('consolas', 15, 'bold'))
@@ -208,7 +211,7 @@ class FlashcardFrame(tk.Frame):
             pause_icon = Image.open(os.path.join(root_dir, img_dir, "pause_icon2.png"))
             pause_icon = ImageTk.PhotoImage(pause_icon.resize((50, 50)))
             label = tk.Label(image=pause_icon)
-            label.image = pause_icon # keep a reference of the image in the label
+            label.image = pause_icon  # keep a reference of the image in the label
             self.autoflip_pause_button = tk.Button(self, image=pause_icon, command=self.toggle_pause_autoflip,
                                                    relief='raised', bd=3, background='grey25', compound='center', width=60, height=60)
             self.autoflip_pause_button.pack(side='top', anchor='nw', padx=10, pady=10)
@@ -227,11 +230,38 @@ class FlashcardFrame(tk.Frame):
             self.engine.setProperty('rate', 220)
             self.engine.setProperty('volume', 0.5)
 
+    def back(self):
+        """
+        Go to previous card. Activated if self.back_button is pressed
+        """
+        if self.autoflip_job:  # if a previously created autoflip event still exists, cancel and delete it
+            self.winfo_toplevel().after_cancel(self.autoflip_job)
+            self.autoflip_job = None
+
+        if self.current_card_num > 0:  # don't want to go back on first card
+            self.is_flipped = False
+            self.next_button.place_forget()
+            self.current_card_num -= 1
+            self.current_card_text.set(f"{self.current_card_num+1}/{self.num_of_cards}")  # e.g. show that value with show as 1 instead of 0
+            self.card_label.config(font=(self.font_type, 20,  'bold' if not self.definition_first else 'normal'))
+
+            self.current_card = self.cards[self.current_card_num]
+            self.current_text.set(self.current_card.term if not self.definition_first else self.current_card.definition)
+            if self.read_aloud:
+                self.parent.update()
+                self.speak_text(self.current_card.term)
+
+            # set an event for flipping the card after the set interval if autoflip is enabled
+            if self.autoflip and not self.pause_autoflip:
+                self.autoflip_job = self.winfo_toplevel().after(int(self.autoflip_interval*1000), self.flip if not self.is_flipped else self.next)
+                self.autoflip_schedule_start = time.time() * 1000
+                self.autoflip_schedule_elapsed = 0
+
     def flip(self):
         """
-        Flipping the card is mainly handled by the current card frame
+        Handles packing and pack_forgetting of various widgets, as well as changing text.
 
-        This handles text to speech of the current card, as well as cancelling an autoflip event if the user flipped before it was issued
+        Also handles text to speech of the current card, as well as cancelling an autoflip event if the user flipped before it was issued
         """
 
         if not self.is_flipped:
@@ -239,7 +269,7 @@ class FlashcardFrame(tk.Frame):
             self.current_text.set(self.current_card.definition if not self.definition_first else self.current_card.term)
             self.card_label.config(font=(self.font_type, 20, 'normal' if not self.definition_first else 'bold'))
 
-            self.next_button.place(relx=0.55, rely=0.8, anchor="center")  # insert the "next card" button
+            self.next_button.place(relx=0.6, rely=0.8, anchor="center")  # insert the "next card" button
 
             if self.autoflip_job:  # see if the autoflip job exists. If so, cancel it
                 self.winfo_toplevel().after_cancel(self.autoflip_job)
