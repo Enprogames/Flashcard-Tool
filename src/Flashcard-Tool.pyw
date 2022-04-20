@@ -110,6 +110,37 @@ def get_flashcard_data(data_path: str):
     return flashcard_sets
 
 
+def get_new_notion_data():
+    global flashcard_sets, card_set_selection_frame, current_frame, flashcard_set_names
+
+    # retrieve new flashcard data from notion and save it in csv files
+    if not skip_notion_retrieval:
+        try:
+
+            downloader = AsyncDataRetriever()
+            downloader.daemon = True
+            downloader.start()
+
+        except Exception as e:
+            print(f"Something went wrong when retrieving or parsing flashcard data from notion: {e}")
+
+    else:
+        print("notion retrieval skipped")
+
+    def wait():
+        global flashcard_sets, card_set_selection_frame, current_frame, flashcard_set_names
+        if downloader.is_alive():
+            root.after(500, wait)
+        else:  # Once the downloader is finished, load flashcard data from csv files
+            flashcard_set_names = []
+            flashcard_sets = get_flashcard_data(flashcard_data_path)
+            card_set_selection_frame = ItemSelectionFrame(root, flashcard_set_names, start_command=view_sets,
+                                                          refresh_command=get_new_notion_data, bg=BACKGROUND_COLOR)
+            show_frame(card_set_selection_frame)
+
+    wait()
+
+
 def goto_main():
 
     global current_frame
@@ -167,39 +198,16 @@ root.update()
 
 flashcard_set_names = []
 
-# retrieve new flashcard data from notion and save it in csv files
-if not skip_notion_retrieval:
-    try:
-
-        downloader = AsyncDataRetriever()
-        downloader.daemon = True
-        downloader.start()
-
-    except Exception as e:
-        print(f"Something went wrong when retrieving or parsing flashcard data from notion: {e}")
-
-else:
-    print("notion retrieval skipped")
-
 
 flashcard_sets = get_flashcard_data(flashcard_data_path)
 
 loading_frame.pack_forget()
 # Present the flashcard sets as selectable items
-card_set_selection_frame = ItemSelectionFrame(root, flashcard_set_names, start_command=view_sets, bg=BACKGROUND_COLOR)
+card_set_selection_frame = ItemSelectionFrame(root, flashcard_set_names, start_command=view_sets,
+                                              refresh_command=get_new_notion_data, bg=BACKGROUND_COLOR)
 card_set_selection_frame.pack(fill="both", expand=True)
 current_frame = card_set_selection_frame
 
-
-def wait():
-    global flashcard_sets
-
-    if downloader.is_alive():
-        root.after(500, wait)
-    else:  # Once the downloader is finished, load flashcard data from csv files
-        flashcard_sets = get_flashcard_data(flashcard_data_path)
-
-
-wait()
+get_new_notion_data()
 
 root.mainloop()

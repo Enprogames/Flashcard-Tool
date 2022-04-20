@@ -37,7 +37,7 @@ class ItemSelectionFrame(tk.Frame):
     List of items to check off for selection
     """
 
-    def __init__(self, parent, items=[], start_command=None, width=600, height=600, bg='#263238'):
+    def __init__(self, parent, items=[], start_command=None, refresh_command=None, width=600, height=600, bg='#263238'):
 
         tk.Frame.__init__(self, parent, width=width, height=height, bg=bg)
         self.bg = bg
@@ -47,6 +47,7 @@ class ItemSelectionFrame(tk.Frame):
 
         self.list_items = items
         self.start_command = start_command
+        self.refresh_command = refresh_command
 
         # display all flashcard sets for selection
         self.scrollable_item_selection = tk.Frame(self, width=400, height=600, bg='white')
@@ -74,7 +75,7 @@ class ItemSelectionFrame(tk.Frame):
         self.scrollable_canvas.pack(side=tk.LEFT, fill="both", expand=True)
         self.scrollable_item_selection.pack(padx=5, pady=5, side=tk.LEFT, fill="both", expand=True)
 
-        ### session customization
+        # -- session customization -- #
         self.options_frame = tk.Frame(self, width=300, height=100, bg=self.bg)
 
         self.read_aloud = tk.BooleanVar()
@@ -125,6 +126,11 @@ class ItemSelectionFrame(tk.Frame):
         self.options_frame.grid_rowconfigure(2, weight=1)
 
         self.options_frame.place(relx=0.97, rely=1, anchor="se")
+
+        # used for refreshing list of flashcard sets
+        self.refresh_button = tk.Button(self, text="RELOAD", foreground='white',
+                                        background='grey25', command=self.refresh_command, font=('consolas', 15, 'bold'))
+        self.refresh_button.place(relx=0.97, rely=1, anchor="se")
 
     def start_button_press(self):
         """
