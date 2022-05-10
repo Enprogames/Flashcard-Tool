@@ -137,3 +137,4 @@ dmypy.json
 # Other
 src/api_conf.json
 *.csv
+*.ipynb

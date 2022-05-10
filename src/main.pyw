@@ -9,9 +9,10 @@ Date: July 27, 2021
 
 import os
 import sys
+import traceback
 
 skip_notion_retrieval = False
-debug = False
+debug = True
 
 ROOT_DIR = ''
 if os.path.basename(os.getcwd()) == 'src':
@@ -66,17 +67,18 @@ class AsyncDataRetriever(Thread):
             flashcard_sets: List[FlashcardSet] = []
 
             # create the flashcard sets from notion data in each shared database
-            for key, value in shared_db_ids.items():
-                notion_db_data_tuple = notion_parse.get_flashcard_data_tuples(value)
+            for db_name, db_id in shared_db_ids.items():
+                notion_db_data_tuple = notion_parse.get_flashcard_data_tuples(db_id)
 
-                flashcard_sets.append(FlashcardSet(key, data_tuple_list=notion_db_data_tuple))
+                flashcard_sets.append(FlashcardSet(db_name, data_tuple_list=notion_db_data_tuple))
 
             # save flashcards to csv files
             for card_set in flashcard_sets:
-                card_set.save_to_csv(flashcard_data_path)
+                if len(card_set.cards) > 0:  # don't save this flashcard set unless it contains at least one card
+                    card_set.save_to_csv(flashcard_data_path)
 
-        except Exception as e:
-            print(f"Something went wrong while retrieving flashcard data from notion: {e}")
+        except Exception:
+            print(f"Something went wrong while retrieving flashcard data from notion: {traceback.print_exc()}")
 
         print(f"New flashcard data successfully retrieved from notion in {round(time.perf_counter()-start, 2)} seconds")
 
@@ -104,7 +106,8 @@ def get_flashcard_data(data_path: str):
                         flashcard_tuple_list.append((term, definition, exclude))
 
             set_name = os.path.basename(f.name)[:-4]
-            flashcard_sets.append(FlashcardSet(set_name, data_tuple_list=flashcard_tuple_list))
+            new_set = FlashcardSet(set_name, data_tuple_list=flashcard_tuple_list)
+            flashcard_sets.append(new_set)
             flashcard_set_names.append(set_name)
 
     return flashcard_sets

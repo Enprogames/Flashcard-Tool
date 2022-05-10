@@ -53,15 +53,12 @@ class FlashcardSet:
     def add_card(self, term: str, definition: str = ""):
         self.cards.append(Flashcard(term, definition))
 
-    def save_to_csv(self, path="flashcard_data", name=""):
-
-        if name == "":
-            name = self.name
+    def save_to_csv(self, path="flashcard_data"):
 
         if not os.path.exists(path):
             os.mkdir(path)
 
-        with open(os.path.join(path, f'{name}.csv'), 'w', newline='') as f:
+        with open(os.path.join(path, f'{self.name}.csv'), 'w', newline='') as f:
 
             writer = csv.writer(f)
 
