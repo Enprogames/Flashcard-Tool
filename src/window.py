@@ -59,7 +59,7 @@ class ItemSelectionFrame(tk.Frame):
         self.scrollable_items_frame = tk.Frame(self.scrollable_canvas, width=0, height=0, bg=bg)
         self.scrollable_items_frame.bind("<Configure>", lambda e: self.scrollable_canvas.configure(scrollregion=self.scrollable_canvas.bbox("all")))
 
-        # set up the scrolling canvas in the
+        # set up the scrolling canvas in the 
         self.scrollable_canvas.create_window((0, 0), window=self.scrollable_items_frame, anchor="nw")
         self.scrollable_canvas.config(yscrollcommand=self.item_selection_scrollbar.set)
 

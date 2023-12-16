@@ -96,7 +96,12 @@ def get_flashcard_data(data_path: str):
             with open(os.path.join(data_path, f'{csv_file}'), 'r') as f:
 
                 reader = csv.reader(f)
-                next(reader)
+                try:
+                    # check if the file has at least one row
+                    first_row = next(reader)
+                except StopIteration:
+                    continue
+
                 for line in reader:
                     if len(line) >= 2:
                         term = line[0]
