@@ -138,3 +138,4 @@ dmypy.json
 src/api_conf.json
 *.csv
 *.ipynb
+flashcards.db
