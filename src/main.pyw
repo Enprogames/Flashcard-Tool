@@ -11,7 +11,6 @@ import os
 import sys
 import traceback
 
-skip_notion_retrieval = False
 debug = True
 
 ROOT_DIR = ''
@@ -30,18 +29,21 @@ if not debug:
 from typing import Dict, List, Tuple
 import time
 import csv
-import notion_parse
+# import notion_parse
 from flashcard import FlashcardSet, Flashcard
 from window import Root, ItemSelectionFrame, FlashcardFrame
+
+from database.manager import DatabaseManager
+from database.models import FlashcardSet, Flashcard
+
 import tkinter as tk
-from threading import Thread
+from sqlalchemy.orm import joinedload
 
 BACKGROUND_COLOR = "#191919"
 # BACKGROUND_COLOR = "#24292e"
 # BACKGROUND_COLOR = '#946b46'
 
 current_frame = None
-current_frame_index = 0
 
 flashcard_csv_file_folder = "csv_flashcard_files"
 
@@ -50,103 +52,90 @@ flashcard_data_path = os.path.join(ROOT_DIR, flashcard_csv_file_folder)
 current_folder = os.path.basename(os.getcwd())
 
 
-class AsyncDataRetriever(Thread):
-    """
-    Asynchronously downloads flashcard data from notion databases. This allows the program to continue running while data is being retrieved.
-    """
-    def __init__(self):
-        super().__init__()
+manager = DatabaseManager()
+manager.ensure_db_upgraded()
 
-    def run(self):
-        try:
+# class AsyncDataRetriever(Thread):
+#     """
+#     Asynchronously downloads flashcard data from notion databases. This allows the program to continue running while data is being retrieved.
+#     """
+#     def __init__(self):
+#         super().__init__()
 
-            start = time.perf_counter()
+#     def run(self):
+#         try:
 
-            # get flashcard data from notion databases
-            shared_db_ids = notion_parse.get_shared_dbs()
-            flashcard_sets: List[FlashcardSet] = []
+#             start = time.perf_counter()
 
-            # create the flashcard sets from notion data in each shared database
-            for db_name, db_id in shared_db_ids.items():
-                notion_db_data_tuple = notion_parse.get_flashcard_data_tuples(db_id)
+#             # get flashcard data from notion databases
+#             shared_db_ids = notion_parse.get_shared_dbs()
+#             flashcard_sets: List[FlashcardSet] = []
 
-                flashcard_sets.append(FlashcardSet(db_name, data_tuple_list=notion_db_data_tuple))
+#             # create the flashcard sets from notion data in each shared database
+#             for db_name, db_id in shared_db_ids.items():
+#                 notion_db_data_tuple = notion_parse.get_flashcard_data_tuples(db_id)
 
-            # save flashcards to csv files
-            for card_set in flashcard_sets:
-                if len(card_set.cards) > 0:  # don't save this flashcard set unless it contains at least one card
-                    card_set.save_to_csv(flashcard_data_path)
+#                 flashcard_sets.append(FlashcardSet(db_name, data_tuple_list=notion_db_data_tuple))
 
-        except Exception:
-            print(f"Something went wrong while retrieving flashcard data from notion: {traceback.print_exc()}")
+#             # save flashcards to csv files
+#             for card_set in flashcard_sets:
+#                 if len(card_set.cards) > 0:  # don't save this flashcard set unless it contains at least one card
+#                     card_set.save_to_csv(flashcard_data_path)
 
-        print(f"New flashcard data successfully retrieved from notion in {round(time.perf_counter()-start, 2)} seconds")
+#         except Exception:
+#             print(f"Something went wrong while retrieving flashcard data from notion: {traceback.print_exc()}")
 
-
-def get_flashcard_data(data_path: str):
-    "read all csv files and use their data for the flashcards"
-
-    flashcard_sets = []
-
-    for csv_file in os.listdir(data_path):
-        flashcard_tuple_list: List[Tuple[str, str, bool]] = []
-
-        # make sure the file is a csv file
-        if csv_file[-4:] == '.csv':
-            with open(os.path.join(data_path, f'{csv_file}'), 'r') as f:
-
-                reader = csv.reader(f)
-                try:
-                    # check if the file has at least one row
-                    first_row = next(reader)
-                except StopIteration:
-                    continue
-
-                for line in reader:
-                    if len(line) >= 2:
-                        term = line[0]
-                        definition = line[1]
-                        exclude = True if len(line) > 2 and line[2] == 'True' else False
-
-                        flashcard_tuple_list.append((term, definition, exclude))
-
-            set_name = os.path.basename(f.name)[:-4]
-            new_set = FlashcardSet(set_name, data_tuple_list=flashcard_tuple_list)
-            flashcard_sets.append(new_set)
-            flashcard_set_names.append(set_name)
-
-    return flashcard_sets
+#         print(f"New flashcard data successfully retrieved from notion in {round(time.perf_counter()-start, 2)} seconds")
 
 
-def get_new_notion_data():
+
+def get_flashcard_data():
     global flashcard_sets, card_set_selection_frame, current_frame, flashcard_set_names
 
-    # retrieve new flashcard data from notion and save it in csv files
-    if not skip_notion_retrieval:
-        try:
+    with manager.create_session() as session:
+        flashcard_sets = session.query(FlashcardSet)\
+                                .options(
+                                    joinedload(FlashcardSet.flashcards)
+                                ).all()
 
-            downloader = AsyncDataRetriever()
-            downloader.daemon = True
-            downloader.start()
+    flashcard_set_names = [set.name for set in flashcard_sets]
 
-        except Exception as e:
-            print(f"Something went wrong when retrieving or parsing flashcard data from notion: {e}")
+    card_set_selection_frame = ItemSelectionFrame(
+        root,
+        flashcard_set_names,
+        start_command=view_sets,
+        refresh_command=get_flashcard_data,
+        bg=BACKGROUND_COLOR
+    )
+    show_frame(card_set_selection_frame)
 
-    else:
-        print("notion retrieval skipped")
 
-    def wait():
-        global flashcard_sets, card_set_selection_frame, current_frame, flashcard_set_names
-        if downloader.is_alive():
-            root.after(500, wait)
-        else:  # Once the downloader is finished, load flashcard data from csv files
-            flashcard_set_names = []
-            flashcard_sets = get_flashcard_data(flashcard_data_path)
-            card_set_selection_frame = ItemSelectionFrame(root, flashcard_set_names, start_command=view_sets,
-                                                          refresh_command=get_new_notion_data, bg=BACKGROUND_COLOR)
-            show_frame(card_set_selection_frame)
+#     # retrieve new flashcard data from notion and save it in csv files
+#     if not skip_notion_retrieval:
+#         try:
 
-    wait()
+#             downloader = AsyncDataRetriever()
+#             downloader.daemon = True
+#             downloader.start()
+
+#         except Exception as e:
+#             print(f"Something went wrong when retrieving or parsing flashcard data from notion: {e}")
+
+#     else:
+#         print("notion retrieval skipped")
+
+#     def wait():
+#         global flashcard_sets, card_set_selection_frame, current_frame, flashcard_set_names
+#         if downloader.is_alive():
+#             root.after(500, wait)
+#         else:  # Once the downloader is finished, load flashcard data from csv files
+#             flashcard_set_names = []
+#             flashcard_sets = get_flashcard_data_from_db()
+#             card_set_selection_frame = ItemSelectionFrame(root, flashcard_set_names, start_command=view_sets,
+#                                                           refresh_command=get_flashcard_data, bg=BACKGROUND_COLOR)
+#             show_frame(card_set_selection_frame)
+
+#     wait()
 
 
 def goto_main():
@@ -161,7 +150,8 @@ def goto_main():
 def show_frame(frame):
     global current_frame
 
-    current_frame.pack_forget()
+    if current_frame:
+        current_frame.pack_forget()
     frame.pack(fill="both", expand=True)
     current_frame = frame
 
@@ -174,7 +164,7 @@ def view_sets():
     selected_sets_values: Dict[str: bool] = card_set_selection_frame.enable
     for set in flashcard_sets:
         if selected_sets_values[set.name].get():
-            for card in set.cards:
+            for card in set.flashcards:
                 if not card.exclude:
                     cards_to_present.append(card)
 
@@ -199,23 +189,26 @@ root = Root(width=1000, height=600)
 root.lift()
 
 loading_frame = tk.Frame(root, bg=BACKGROUND_COLOR)
-loading_label = tk.Label(loading_frame, text='Loading New Flashcard Data...', font=('consolas', 20, 'bold'), fg='white', bg=BACKGROUND_COLOR)
+loading_label = tk.Label(
+    loading_frame,
+    text='Loading New Flashcard Data...',
+    font=('consolas', 20, 'bold'),
+    fg='white',
+    bg=BACKGROUND_COLOR
+)
 loading_label.place(relx=.5, rely=.5, anchor="c")
 loading_frame.pack(fill="both", expand=True)
 root.update()
 
 flashcard_set_names = []
-
-
-flashcard_sets = get_flashcard_data(flashcard_data_path)
-
 loading_frame.pack_forget()
-# Present the flashcard sets as selectable items
-card_set_selection_frame = ItemSelectionFrame(root, flashcard_set_names, start_command=view_sets,
-                                              refresh_command=get_new_notion_data, bg=BACKGROUND_COLOR)
-card_set_selection_frame.pack(fill="both", expand=True)
-current_frame = card_set_selection_frame
 
-get_new_notion_data()
+get_flashcard_data()
+
+# Present the flashcard sets as selectable items
+# card_set_selection_frame = ItemSelectionFrame(root, flashcard_set_names, start_command=view_sets,
+#                                               refresh_command=get_flashcard_data, bg=BACKGROUND_COLOR)
+# card_set_selection_frame.pack(fill="both", expand=True)
+# current_frame = card_set_selection_frame
 
 root.mainloop()
